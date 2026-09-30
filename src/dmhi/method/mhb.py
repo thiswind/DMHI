@@ -1,6 +1,4 @@
-"""Stage II — Manifold Harmonic Basis (MHB) imputation.
-
-PLAN-EXP-MHB-INTEGRATE-036A: faithful implementation of Algorithm 1
+"""Stage II — Manifold Harmonic Basis (MHB) imputation.: faithful implementation of Algorithm 1
 (`00_paper/cn_materials/sections/sec4_method.tex`, eqs. (24)(25)(27)(28)(29)).
 
 Pipeline contract (mirrors `karcher_impute`):
@@ -188,7 +186,7 @@ def mhb_solve_coeffs(
 
 
 def mhb_build_latent_graph(Z: np.ndarray, k: int = 10) -> np.ndarray:
-    """kNN graph in latent space plus a temporal chain (PLAN-045 rescue).
+    """kNN graph in latent space plus a temporal chain rescue).
 
     Dead rows connect to state-similar moments anywhere in the series;
     chain edges preserve temporal continuity.  Used by the soft spline
@@ -319,7 +317,7 @@ def mhb_impute(
     spline_gamma: float = 0.02,
     k_latent: int = 10,
 ) -> np.ndarray:
-    """Stage II latent repair — default soft graph spline (PLAN-045).
+    """Stage II latent repair — default soft graph spline.
 
     mode='soft' (default): full-spectrum Laplacian-regularized extension on a
     latent kNN graph; mode='hard': legacy K-band MHB projection (Algorithm 1).

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-e4g_n4_determinism.py
+determinism_check.py
 =====================
 N4 Level-2: fixed mask, multiple inference repetitions.
 
@@ -13,12 +13,12 @@ Deterministic methods (DMHI, classical, and learned models at eval mode)
 should produce bit-identical outputs across repetitions.
 
 Run from the repository root (dependencies installed):
-  python _work/code/e4g_n4_determinism.py
-  python _work/code/e4g_n4_determinism.py --domains gait_uci gas_home physionet2012
+  python _work/code/determinism_check.py
+  python _work/code/determinism_check.py --domains gait_uci gas_home physionet2012
 
 Outputs:
-  experiments/logs/e4g/n4_determinism.jsonl
-  experiments/logs/e4g/n4_determinism_summary.csv
+  experiments/logs/determinism/n4_determinism.jsonl
+  experiments/logs/determinism/n4_determinism_summary.csv
 """
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ os.chdir(REPO)
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "src"))
 
-from experiments.eval_ours import _apply_block_missing
+from experiments.evaluate import _apply_block_missing
 from experiments.baselines.common import apply_block_missing as _apply_block_missing  # V6 realized override
 from experiments.baselines.common import (
     load_dataset,
@@ -55,7 +55,7 @@ from experiments.baselines.common import (
     apply_block_missing,
 )
 
-OUT_DIR = REPO / "experiments/logs/e4g"
+OUT_DIR = REPO / "experiments/logs/determinism"
 OURS_CKPT = REPO / "experiments/logs/recompute033/ours"
 LEGACY_BASELINE = REPO / "experiments/logs/baselines"
 

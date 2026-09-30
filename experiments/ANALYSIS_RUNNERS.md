@@ -2,14 +2,14 @@ Analysis-runner provenance (ALLOW pull, 2026-08-02)
 ===================================================
 
 Policy: gap_provenance_audit plan section 6.1, ALLOW-only
-        (effective runners + e4a md_ksens; no DENY/HOLD results)
+        (effective runners + MD k-sensitivity analysis)
 
 Pulled into code/experiments/:
-  e4a_md_ksensitivity.py
-  e4b_downstream_md.py
-  e4d_downstream_gait.py
-  e4g_n4_determinism.py
-  e4f_downstream_gas.py
+  md_k_sensitivity.py
+  downstream_md_auroc.py
+  downstream_gait_classify.py
+  determinism_check.py
+  downstream_gas_classify.py
   _code_root.py          (local path adapter)
 
 Pulled into paper/assets/data_derived/:
@@ -32,4 +32,4 @@ Run notes:
   baseline imputations); they are provenance/re-run tools, not a
   laptop-only smoke path. They resolve the repo root automatically
   via _code_root.py, e.g.:
-      python experiments/e4b_downstream_md.py
+      python experiments/downstream_md_auroc.py

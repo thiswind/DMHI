@@ -59,7 +59,7 @@ def clle_inverse(
         X_obs: (T, D) original observed data (may have NaN for missing).
         M: (T, D) binary mask, 1=observed 0=missing.
         G_field: optional (T, d, d) field of SPD metric tensors evaluated at
-            ``Z_prime``. When provided (PLAN-EXP-ABLATION-004 Stage D fix for
+            ``Z_prime``. When providedtage D fix for
             break ③), non-landmark simplex weights are solved in the
             G-Mahalanobis inner product so that the learned anisotropy
             propagates into ``hat_X``. When ``None`` (e.g. ablation_no_metric
@@ -87,7 +87,7 @@ def clle_inverse(
         ], dtype=int)
         nn_local = np.clip(nn_local, 0, len(id_L) - 1)
         Z_nn = Z_L_prime[nn_local]              # (k, d) updated landmark latents
-        # PLAN-EXP-ABLATION-004 Stage D (fix break ③):
+        #tage D (fix break ③):
         # When a per-timestep metric G_field[t] is available, solve the
         # simplex-weight problem in the G-Mahalanobis inner product so the
         # learned anisotropy actually steers reconstruction. Without G_field

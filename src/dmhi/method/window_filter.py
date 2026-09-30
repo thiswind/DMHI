@@ -1,4 +1,4 @@
-"""Window filtering for Stage II G training (PLAN-EXP-CONTRAST-REALIGN-001 S2-A)."""
+"""Window filtering for Stage II G training."""
 from __future__ import annotations
 
 import numpy as np

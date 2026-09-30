@@ -15,7 +15,7 @@ data/processed/<domain>/
 
 Splits are subject-disjoint where a subject id exists (no leakage).
 Evaluation missingness (block, length 20) is applied at run time by
-`experiments/eval_ours.py` / `experiments/baselines/common.py` from the
+`experiments/evaluate.py` / `experiments/baselines/common.py` from the
 cell's `(domain, missing_rate, block_size, seed)` — every method sees
 byte-identical masks.
 
@@ -84,5 +84,5 @@ your side.
 
 ## Sample data
 
-`data/sample/` contains a tiny synthetic set used by `smoke_test.py`
-(regenerable via `make_sample.py`) — it is not a paper domain.
+`src/dmhi/utils/sample/` contains a tiny synthetic set used by `smoke_test.py`
+(regenerable via `src/dmhi/utils/make_sample.py`) — it is not a paper domain.

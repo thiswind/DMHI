@@ -9,7 +9,7 @@ pip install -e .            # or: pip install -r requirements.txt
 python smoke_test.py
 ```
 
-Fits a `RiemannianImputer` on the synthetic `data/sample/` set and checks
+Fits a `RiemannianImputer` on the synthetic `src/dmhi/utils/sample/` set and checks
 the pipeline end to end: finite errors, observed entries preserved.
 
 ## Level 1 — train + evaluate a real paper domain (minutes, no downloads)
@@ -20,10 +20,10 @@ deployed configuration from scratch, then evaluate it exactly as the paper
 does (block missingness, length 20, deterministic):
 
 ```bash
-python experiments/train_ours.py --dataset gas_home --seed 7 \
-    --out_dir checkpoints/ours
+python experiments/train.py --dataset gas_home --seed 7 \
+    --out_dir checkpoints/dmhi
 
-python experiments/eval_ours.py --run_dir checkpoints/ours/gas_home_seed7 \
+python experiments/evaluate.py --run_dir checkpoints/dmhi/gas_home_seed7 \
     --block_size 20 --rate 0.9 --seed 7
 ```
 
@@ -50,7 +50,7 @@ numbers, use the released checkpoints (Level 2).
 
 To target a specific reported cell, take its hyperparameters from
 `configs/<domain>_seed<N>.json` (see `configs/README.md`) and pass them to
-`train_ours.py` (they map 1:1 to CLI flags). The three DUA-restricted /
+`train.py` (they map 1:1 to CLI flags). The three DUA-restricted /
 oversized domains (physionet2012, mimic, electricity) are handled in
 `data/DATA.md` § "Domains not in the repository".
 
@@ -59,10 +59,10 @@ oversized domains (physionet2012, mimic, electricity) are handled in
 - **Checkpoints.** The trained "Ours" checkpoints for all reported cells
   (≈470 MB uncompressed (44 runs, 207 MB zip)) are distributed as a release archive
   (`dmhi-checkpoints-<version>.zip`, see GitHub *Releases*). Unpack under
-  `checkpoints/ours/` and evaluate without retraining:
+  `checkpoints/dmhi/` and evaluate without retraining:
 
   ```bash
-  python experiments/eval_ours.py --run_dir checkpoints/ours/hydraulic_seed7 \
+  python experiments/evaluate.py --run_dir checkpoints/dmhi/hydraulic_seed7 \
       --block_size 20 --seed 7 --deterministic
   ```
 

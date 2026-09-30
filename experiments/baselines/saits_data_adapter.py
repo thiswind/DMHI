@@ -10,7 +10,7 @@ SAITS expects: <dataset_base_dir>/datasets.h5
     indicating_mask: (N, T, D) float32, 1=held-out eval positions
 
 Usage:
-    python saits_data_converter.py \\
+    python saits_data_adapter.py \\
         --dataset physionet2012 \\
         --missing_rate 0.3 \\
         --missing_pattern mcar \\

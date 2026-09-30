@@ -38,7 +38,7 @@ LOCAL_PREFIXES = (
     "lec_stage2",
     "lec_stage3",
     "ablation_geom",
-    "csdi_physio_adapter",
+    "csdi_physio_dataset",
     "main_model",
     "model",
     "utils",

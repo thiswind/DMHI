@@ -1,4 +1,4 @@
-"""Cross-subject latent neighbor bank for Karcher imputation (PLAN-EXP-ABLATION-CROSSNN-001)."""
+"""Cross-subject latent neighbor bank for Karcher imputation."""
 from __future__ import annotations
 
 import numpy as np

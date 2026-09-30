@@ -21,9 +21,7 @@ def loss_geo(
     """MLE Gaussian metric loss (Riemannian metric learning standard form).
 
     L_geo = 0.5 * mean (z_hat - z_target)^T G (z_hat - z_target)
-          - 0.5 * beta * mean log det G
-
-    PLAN-EXP-ABLATION-004 Stage E (fix break ④): the original loss
+          - 0.5 * beta * mean log det Gtage E (fix break ④): the original loss
 
         L_geo = mean (z_hat - z_target)^T G (z_hat - z_target)
 

@@ -23,9 +23,9 @@ sys.path.insert(0, str(HERE / "src"))
 
 
 def _load_sample() -> tuple[np.ndarray, np.ndarray]:
-    sample = HERE / "data" / "sample"
+    sample = HERE / "src" / "dmhi" / "utils" / "sample"
     if not (sample / "X.npy").exists():
-        import make_sample
+        from dmhi.utils import make_sample
 
         make_sample.main()
     X = np.load(sample / "X.npy").astype(np.float32)

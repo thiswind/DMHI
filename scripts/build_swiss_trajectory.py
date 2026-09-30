@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PLAN-EXP-DIAGNOSTIC-005 Stage A: build SwissTrajectory dataset.
+"""tage A: build SwissTrajectory dataset.
 
 Each trajectory is a smooth random walk on a 2D swiss-roll surface,
 embedded in R^3 via the standard swiss-roll parametrisation, then
@@ -89,7 +89,7 @@ for name, ids in [("train", i_tr), ("val", i_va), ("test", i_te)]:
 
 (OUT / "dataset_card.json").write_text(json.dumps({
     "name": "swiss_trajectory",
-    "purpose": "PLAN-EXP-DIAGNOSTIC-005 — controlled synthetic manifold for "
+    "purpose": " — controlled synthetic manifold for "
                "Riemannian metric mechanism validation",
     "N_total": N_TOTAL, "T": T, "D": D,
     "intrinsic_dim": 2,

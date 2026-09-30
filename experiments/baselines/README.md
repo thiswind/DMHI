@@ -9,8 +9,8 @@ method sees identical holes.
 | runner | backend | provenance |
 |---|---|---|
 | `run_classical.py` | built-in (NumPy only) | Mean fill, linear interpolation, LOCF — implemented in-repo |
-| `run_saits.py` | PyPOTS (>=1.0) | calls `pypots.imputation.SAITS` / `pypots.imputation.BRITS`; data interface via `saits_data_converter.py` |
-| `run_timemixer.py` | PyPOTS | library wrapper (v3.2); data interface via `timemixer_data_converter.py` |
+| `run_saits.py` | PyPOTS (>=1.0) | calls `pypots.imputation.SAITS` / `pypots.imputation.BRITS`; data interface via `saits_data_adapter.py` |
+| `run_timemixer.py` | PyPOTS | library wrapper (v3.2); data interface via `timemixer_data_adapter.py` |
 | `run_imputeformer.py` | PyPOTS | calls the PyPOTS ImputeFormer implementation |
 | `run_csdi.py` | authors' repo, local checkout | wraps `csdi_official/` (official CSDI code) via the `OurPhysioDataset` adapter; the runner resolves the checkout as a sibling of `experiments/` — not included in this repository, fetch upstream into `csdi_official/` |
 | `run_psw_i.py` | authors' repo, extracted class | PSW-I (ICLR 2025); `OTImputationIni` extracted from `psw_i_official/benchmark.py` and adapted to our data interface — not included, fetch upstream into `psw_i_official/` |

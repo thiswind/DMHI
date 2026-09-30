@@ -7,7 +7,7 @@ reference_repos/baselines/timemixer_official/run.py) and inherited that
 pipeline's `--task_name imputation` quirk: official TimeMixer evaluates only
 on an internally generated MCAR mask, so block-missing cells reported the
 MAE on the wrong target (mre=1.0 for all PhysioNet block-* cells). See
-``experiments/logs/paper_v3/PROGRESS.md`` 2026-05-29T06:48 entry and PLAN-022
+``experiments/logs/paper_v3/PROGRESS.md`` 2026-05-29T06:48 entry and
 for the full diagnosis.
 
 This rewrite uses PyPOTS' own TimeMixer implementation (`pypots.imputation.TimeMixer`),

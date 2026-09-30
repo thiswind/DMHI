@@ -4,10 +4,10 @@ SAME saved imputed arrays + SAME canonical masks as plan048, and test whether th
 method RANKING by MD is stable across k (Spearman vs the k=5 ranking).
 
 Run from the repository root with the full data tree in place (see
-experiments/e4_ALLOW_PROVENANCE.txt):
-    python experiments/e4a_md_ksensitivity.py --out experiments/logs/e4a/md_ksens.jsonl
+experiments/ANALYSIS_RUNNERS.md):
+    python experiments/md_k_sensitivity.py --out experiments/logs/md_k_sensitivity/md_ksens.jsonl
 
-Reuses: experiments.eval_ours._apply_block_missing, plan047.manifold_deviation_rows.
+Reuses: experiments.evaluate._apply_block_missing, the shared manifold-deviation helper.
 No retraining; ours re-imputed deterministically from released checkpoints.
 Focus cells: rate in {0.5,0.9}, L in {10,20,30,40}, seeds {7,42,123},
 datasets {physionet2012, air_quality_italy, hydraulic, mimic}.
@@ -26,7 +26,7 @@ from _code_root import code_root  # noqa: E402
 REPO = code_root(pathlib.Path(__file__))
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "src"))
-from experiments.eval_ours import _apply_block_missing  # noqa: E402
+from experiments.evaluate import _apply_block_missing  # noqa: E402
 from dmhi.method.pipeline import RiemannianImputer  # noqa: E402
 
 KS = [3, 5, 10, 20]
@@ -77,7 +77,7 @@ def spearman(rank_a, rank_b):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="experiments/logs/e4a/md_ksens.jsonl")
+    ap.add_argument("--out", default="experiments/logs/md_k_sensitivity/md_ksens.jsonl")
     ap.add_argument("--limit", type=int, default=0)
     args = ap.parse_args()
     out = pathlib.Path(args.out)

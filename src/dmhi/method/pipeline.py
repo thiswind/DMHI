@@ -109,7 +109,7 @@ class RiemannianImputer:
         d_ff: int = 128,
         lambda_geo: float = 1e-3,
         # Stage II — training
-        # PLAN-EXP-ABLATION-004 Stage E: lambda_F decreased from 1e-4 to 1e-5
+        #tage E: lambda_F decreased from 1e-4 to 1e-5
         # to give the new MLE-style loss_geo more room. The Frobenius penalty
         # on G is now soft-floor (anti-explosion) rather than the dominant
         # regulariser.
@@ -142,7 +142,7 @@ class RiemannianImputer:
         # REVISE-003: orthogonal consumer-path switches (inference only)
         ablation_no_karcher_g: bool = False,
         ablation_no_simplex_g: bool = False,
-        # P1 (PLAN-EXP-PARALLEL-ABLATION-001): G only in Karcher, not Stage III simplex
+        # P1: G only in Karcher, not Stage III simplex
         scoped_g_simplex: bool = True,
         # P2: hold-block timesteps use spatial-only CLLE lift
         hold_aware_stage1: bool = False,
@@ -165,7 +165,7 @@ class RiemannianImputer:
         # CONTRAST-REALIGN Stage II: pullback on filtered native windows
         stage2_realign: bool = False,
         lambda_aniso: float = 0.01,
-        # PLAN-EXP-ABLATION-CROSSNN-001: cross-subject Karcher neighbors (ablation only)
+        #: cross-subject Karcher neighbors (ablation only)
         ablation_cross_subject_knn: bool = False,
         cross_k: int = 20,
         cross_sigma: float = 3.0,
@@ -176,9 +176,9 @@ class RiemannianImputer:
         z_n_oracle_alpha: float = 0.0,
         z_prime_oracle_alpha: float = 0.0,
         z_hold_oracle_alpha: float = 0.0,
-        # PLAN-EXP-MHB-INTEGRATE-036A / PLAN-EXP-PAPER-MHB-RECANON-037:
+        # /:
         # Stage II operator selection. 'mhb' (paper Algorithm 1) is the
-        # canonical default since PLAN-037; 'karcher' is kept as the ablation
+        # canonical default since; 'karcher' is kept as the ablation
         # operator. Inference-time choice — checkpoints trained with either
         # value are interchangeable.
         stage2_method: str = "mhb",
@@ -253,7 +253,7 @@ class RiemannianImputer:
         self.z_prime_oracle_alpha = float(z_prime_oracle_alpha)
         self.z_hold_oracle_alpha = float(z_hold_oracle_alpha)
         self.stage2_method = str(stage2_method)
-        # Paper defaults: soft spline (PLAN-045); hard band-limit via mode='hard'
+        # Paper defaults: soft spline; hard band-limit via mode='hard'
         self.mhb_params = dict(mhb_params) if mhb_params else {
             "mode": "soft",
             "spline_gamma": 0.02,
@@ -555,7 +555,7 @@ class RiemannianImputer:
         else:
             self._decoder = None
 
-        # --- PLAN-EXP-ABLATION-004 Stage A: G-field diagnostic ---
+        # ---tage A: G-field diagnostic ---
         if self._metric_net is not None:
             sample_n = min(8, Z_train.shape[0])
             Z_sample_diag = torch.from_numpy(Z_train[:sample_n].astype(np.float32))
@@ -1159,7 +1159,7 @@ class RiemannianImputer:
         N, T, D = X.shape
         hat_X = np.zeros_like(X, dtype=np.float32)
 
-        # --- PLAN-EXP-ABLATION-004 Stage A: reset Karcher counters ---
+        # ---tage A: reset Karcher counters ---
         reset_karcher_stats()
         self._latent_bank = None
         cross_k_eff = self._effective_cross_k()
@@ -1261,7 +1261,7 @@ class RiemannianImputer:
                 self._metric_net.eval()
                 reset_karcher_detail()
                 if str(getattr(self, "stage2_method", "mhb")) == "mhb":
-                    # PLAN-EXP-MHB-INTEGRATE-036A — paper Algorithm 1 path.
+                    # — paper Algorithm 1 path.
                     # Graph A = Stage I mask-weighted time-window k-NN graph
                     # (eqs. (5)-(7)) built on THIS sample's low-d PCA coords,
                     # mirroring MaskedManifoldEmbedder.fit() exactly.
@@ -1292,7 +1292,7 @@ class RiemannianImputer:
                         # observation fraction (floored at 0.05 in mhb_spline_extend)
                         # as a benign reliability prior. The two are numerically
                         # equivalent on the deployed grid (|dMAE| < 1e-4, measured on
-                        # hydraulic via eval_ours.py), so reported numbers match the
+                        # hydraulic via evaluate.py), so reported numbers match the
                         # w_t==1 claim in the paper/supplement.
                         row_frac=m_n.astype(np.float64).mean(axis=1),
                         spline_gamma=float(mp.get("spline_gamma", 0.02)),
@@ -1357,7 +1357,7 @@ class RiemannianImputer:
             else:
                 # Pure CLLE inverse fallback.
                 #
-                # PLAN-EXP-ABLATION-004 Stage D (fix break ③):
+                #tage D (fix break ③):
                 # Evaluate the learned metric G(z) along Z_prime so that the
                 # downstream simplex-weight solve in clle_inverse uses
                 # G-Mahalanobis geometry. When ablation_no_metric or the
@@ -1549,7 +1549,7 @@ class RiemannianImputer:
                         + alpha_x * x_fill[hold_eval]
                     )
 
-        # --- PLAN-EXP-ABLATION-004 Stage A: report Karcher stats ---
+        # ---tage A: report Karcher stats ---
         _karcher_stats = get_karcher_stats()
         if not _env_flag("DMHI_SILENT"):
             print(f"[ABL-004 diagnostic] karcher_stats: {_karcher_stats}", flush=True)
@@ -1656,7 +1656,7 @@ class RiemannianImputer:
         if not hasattr(obj, "z_hold_oracle_alpha"):
             obj.z_hold_oracle_alpha = 0.0
         if not hasattr(obj, "stage2_method"):
-            # PLAN-037: canonical protocol = MHB inference on any checkpoint;
+            #: canonical protocol = MHB inference on any checkpoint;
             # pre-036A checkpoints therefore backfill to 'mhb'.
             obj.stage2_method = "mhb"
         if not hasattr(obj, "mhb_params"):

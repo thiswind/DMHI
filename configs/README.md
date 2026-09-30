@@ -3,7 +3,7 @@
 One JSON file per reported paper cell, named `<domain>_seed<N>.json`. These
 are the exact hyperparameters behind every "Ours" number in the paper; each
 file mirrors the `config.json` written next to the corresponding checkpoint
-(`checkpoints/ours/<domain>_seed<N>/config.json` — checkpoints themselves are
+(`checkpoints/dmhi/<domain>_seed<N>/config.json` — checkpoints themselves are
 not redistributed, see `../REPRODUCE.md`).
 
 ## Schema

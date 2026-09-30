@@ -186,7 +186,7 @@ class MLPMetricNet(nn.Module):
 def diagnose_G_field(G_net, Z_sample: torch.Tensor, device: torch.device) -> dict:
     """Diagnostic statistics of the learned G(z) field on a sample of latents.
 
-    Used by PLAN-EXP-ABLATION-004 Stage A to verify whether the metric
+    Used bytage A to verify whether the metric
     network has learned a non-trivial (anisotropic) SPD field, or has
     collapsed to a constant multiple of identity.
 

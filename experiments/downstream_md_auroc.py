@@ -22,10 +22,10 @@ os.chdir(REPO)
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "src"))
 
-from experiments.eval_ours import _apply_block_missing
+from experiments.evaluate import _apply_block_missing
 
 DATA_DIR = REPO / "data/processed/physionet2012"
-OUT_DIR = REPO / "experiments/logs/e4b"
+OUT_DIR = REPO / "experiments/logs/downstream_md"
 BASELINE_DIR = REPO / "experiments/logs/bench_v2/physionet2012"
 OURS_DIR = REPO / "experiments/logs/recompute033/ours"
 

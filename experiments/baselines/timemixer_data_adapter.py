@@ -10,7 +10,7 @@ We flatten (N, T, D) → (N*T, D+1).
 Missing positions are zero-filled (TimeMixer will apply its own MCAR mask).
 
 Usage:
-    python timemixer_data_converter.py \\
+    python timemixer_data_adapter.py \\
         --dataset physionet2012 \\
         --out_dir /tmp/timemixer_data
 """

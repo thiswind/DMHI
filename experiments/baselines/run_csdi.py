@@ -34,7 +34,7 @@ from common import (
     make_input_mask, compute_metrics, save_results, save_imputed,
     iter_configs, metrics_filename, imputed_filename, BLOCK_LENS,
 )
-from csdi_physio_adapter import get_our_dataloader
+from csdi_physio_dataset import get_our_dataloader
 
 CSDI_REPO = str(pathlib.Path(__file__).parent.parent.parent /
                 "reference_repos" / "baselines" / "csdi_official")

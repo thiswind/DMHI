@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .g_train_filter import filter_summary, filter_windows
+from .window_filter import filter_summary, filter_windows
 from .karcher import karcher_impute
 from .losses import loss_aniso, loss_identity, loss_pullback, loss_reg, loss_smooth
 from .metric import SPDMetricNet

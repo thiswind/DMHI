@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the tiny synthetic smoke-test sample shipped under data/sample/.
+"""Generate the tiny synthetic smoke-test sample shipped under src/dmhi/utils/sample/.
 
 The sample is purely synthetic: 40 short multivariate windows whose channels are
 smooth nonlinear functions of a 2-D latent trajectory, matching the `(N, T, D)`
@@ -9,7 +9,7 @@ does.
 
 Deterministic (fixed seed) so the shipped arrays are reproducible:
 
-    python make_sample.py
+    python src/dmhi/utils/make_sample.py
 """
 import os
 

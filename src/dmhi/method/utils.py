@@ -199,7 +199,7 @@ def simplex_weights(X_samp: np.ndarray, x_i: np.ndarray) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# G-Mahalanobis simplex weights (PLAN-EXP-ABLATION-004 Stage D)
+# G-Mahalanobis simplex weightstage D)
 # ---------------------------------------------------------------------------
 
 def simplex_weights_metric(

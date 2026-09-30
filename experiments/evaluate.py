@@ -3,7 +3,7 @@
 
 Usage:
     conda activate base
-    python experiments/eval_ours.py --run_dir experiments/logs/<run_id>/
+    python experiments/evaluate.py --run_dir experiments/logs/<run_id>/
 
 Outputs metrics.json in the run directory.
 """
@@ -131,7 +131,7 @@ def main():
                         "mask_seed = seed + 2 (shared with baselines). "
                         "Default: seed + 2.")
     p.add_argument("--deterministic", action="store_true",
-                   help="Enable strict determinism for inference (mirrors train_ours.py).")
+                   help="Enable strict determinism for inference (mirrors train.py).")
     args = p.parse_args()
 
     set_seed(args.seed, deterministic=args.deterministic)

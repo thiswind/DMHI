@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
-# Karcher diagnostics (PLAN-EXP-ABLATION-004 Stage A)
+# Karcher diagnosticstage A)
 # Tracks call rate, skip rate (observed empty), and actual iteration steps.
 # Resetable per impute() call from pipeline.py.
 # ---------------------------------------------------------------------------
@@ -143,7 +143,7 @@ def karcher_impute(
     g_scale: float = 1.0,
     eigen_clip: Optional[float] = None,
     g_active_mask: Optional[np.ndarray] = None,
-    # PLAN-EXP-ABLATION-CROSSNN-001: cross-subject latent bank
+    #: cross-subject latent bank
     Z_bank: Optional[np.ndarray] = None,
     cross_k: int = 0,
     cross_sigma: float = 3.0,

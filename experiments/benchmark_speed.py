@@ -4,7 +4,7 @@
 Times DMHI per-sample inference on released checkpoints against classical
 baselines on identical data and masks, and prints the paper's reference
 numbers side by side. Domains are auto-discovered from
-``checkpoints/ours/<domain>_seed<*>`` intersected with ``data/processed``.
+``checkpoints/dmhi/<domain>_seed<*>`` intersected with ``data/processed``.
 
 Usage:
     python experiments/benchmark_speed.py                      # all domains
@@ -42,7 +42,7 @@ RUN_DIR_RE = re.compile(r"^(?P<domain>.+)_seed(?P<seed>\d+)$")
 
 
 def _apply_block_missing(M, L, rate, seed):
-    from experiments.eval_ours import _apply_block_missing as _abm
+    from experiments.evaluate import _apply_block_missing as _abm
     return _abm(M, L, rate, seed=seed)
 
 
@@ -81,7 +81,7 @@ def mean_impute(X, M):
 
 def discover_runs(domain=None):
     runs = []
-    for d in sorted((REPO / "checkpoints" / "ours").iterdir()):
+    for d in sorted((REPO / "checkpoints" / "dmhi").iterdir()):
         if not d.is_dir():
             continue
         m = RUN_DIR_RE.match(d.name)
@@ -107,7 +107,7 @@ def main():
     runs = discover_runs(args.domain)
     if not runs:
         sys.exit("no runnable <domain>_seed<*> checkpoints with local data found; "
-                 "unpack the release archive under checkpoints/ours/ first")
+                 "unpack the release archive under checkpoints/dmhi/ first")
 
     print("CPU inference-speed benchmark (paper Table IV, Exp-4)")
     print(f"config: rho={args.rate}  L={args.block}  mask_seed=seed+2  "

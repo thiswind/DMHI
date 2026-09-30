@@ -36,14 +36,14 @@ python smoke_test.py
 ```
 
 Fits a deliberately tiny `RiemannianImputer` on the synthetic sample in
-`data/sample/`, carves a block hold-out, imputes it, and checks finiteness
+`src/dmhi/utils/sample/`, carves a block hold-out, imputes it, and checks finiteness
 and observed-entry preservation. Runs in seconds on CPU.
 
 ## The 30-second speed demo (Table IV)
 
 DMHI's headline claim is CPU-only, millisecond inference — ~840× faster than
 the diffusion baseline CSDI on the same CPU. See it yourself after
-unpacking the checkpoint release under `checkpoints/ours/`:
+unpacking the checkpoint release under `checkpoints/dmhi/`:
 
 ```bash
 python experiments/benchmark_speed.py
@@ -67,7 +67,7 @@ src/dmhi/method/        The deployed pipeline (importable package)
   clle.py                 Stage III: symmetric CLLE inverse projection
   metric.py, utils.py     graph construction and helpers
 experiments/
-  eval_ours.py            evaluate a saved checkpoint on a test split
+  evaluate.py            evaluate a saved checkpoint on a test split
   e4*.py                  paper analyses (MD k-sensitivity, downstream, N=4 determinism)
   baselines/              classical / SAITS / BRITS / TimeMixer / ImputeFormer /
                           CSDI / PSW-I runners (see baselines/README.md)
@@ -75,7 +75,7 @@ configs/                 one JSON per reported paper cell (see configs/README.md
 data/
   processed/              17 of the paper's 20 domains, ready to use (data/DATA.md)
   DATA.md                 provenance + restricted-domain acquisition routes
-  sample/                 tiny synthetic smoke set (make_sample.py regenerates it)
+  sample/                 tiny synthetic smoke set (src/dmhi/utils/make_sample.py regenerates it)
 scripts/                 dataset rebuild scripts (process_newds, fetch_pulsedb, build_swiss_trajectory, …)
 tests/                   config + shipped-data sanity tests
 smoke_test.py            clone-and-run end-to-end check
@@ -91,10 +91,10 @@ mimic, oversized electricity) have documented acquisition routes in
 with the paper's block-missing protocol:
 
 ```bash
-python experiments/train_ours.py --dataset gas_home --seed 7 \
-    --out_dir checkpoints/ours
-python experiments/eval_ours.py \
-    --run_dir checkpoints/ours/gas_home_seed7 \
+python experiments/train.py --dataset gas_home --seed 7 \
+    --out_dir checkpoints/dmhi
+python experiments/evaluate.py \
+    --run_dir checkpoints/dmhi/gas_home_seed7 \
     --block_size 20 --rate 0.9 --seed 7
 ```
 

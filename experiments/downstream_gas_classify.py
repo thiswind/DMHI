@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-e4d_downstream_gait.py
-======================
-E4d: Correlate Manifold Deviation with downstream 3-class gait AUROC.
+downstream_gas_classify.py
+=====================
+E4f: Correlate Manifold Deviation with downstream home-activity AUROC.
 
-Dataset : gait_uci  (X_test shape: 60 × 101 × 6)
-Task    : classify gait condition (3 classes) → macro OvR AUROC
-Seeds   : 7, 42, 123  (same seeds used for imputation)
+Dataset : gas_home  (X_test shape: 20 × 100 × 10)
+Task    : classify home activity (banana / wine / ...) → macro OvR AUROC
+Seeds   : 7, 42, 123
 
 Run from the repository root (dependencies installed):
-  python _work/code/e4d_downstream_gait.py
+  python _work/code/downstream_gas_classify.py
 
 Outputs:
-  experiments/logs/e4d/downstream_gait.jsonl
-  experiments/logs/e4d/downstream_gait_summary.csv
+  experiments/logs/downstream_gas/downstream_gas.jsonl
+  experiments/logs/downstream_gas/downstream_gas_summary.csv
 """
 from __future__ import annotations
 
@@ -37,13 +37,12 @@ os.chdir(REPO)
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "src"))
 
-from experiments.eval_ours import _apply_block_missing  # mask generator
+from experiments.evaluate import _apply_block_missing
 from experiments.baselines.common import apply_block_missing as _apply_block_missing  # V6 realized override
 
-# ── paths ────────────────────────────────────────────────────────────────────
-DATA_DIR    = REPO / "data/processed/gait_uci"
-OUT_DIR     = REPO / "experiments/logs/e4d"
-NEWDS_DIR   = REPO / "experiments/logs/newds_v2/gait_uci"
+DATA_DIR    = REPO / "data/processed/gas_home"
+OUT_DIR     = REPO / "experiments/logs/downstream_gas"
+NEWDS_DIR   = REPO / "experiments/logs/newds_v2/gas_home"
 OURS_CKPT   = REPO / "experiments/logs/recompute033/ours"
 
 SEEDS        = [7, 42, 123]
@@ -55,7 +54,6 @@ METHODS_LOCAL    = ["ours", "linear", "mean"]
 METHODS          = METHODS_LOCAL + METHODS_BASELINE
 
 
-# ── MD helper ────────────────────────────────────────────────────────────────
 def manifold_deviation_rows(X_hat, X_true, row_mask, k=5, obs_dims=None):
     N, T, D = X_true.shape
     if obs_dims is None:
@@ -76,15 +74,11 @@ def manifold_deviation_rows(X_hat, X_true, row_mask, k=5, obs_dims=None):
     per_row = dists.mean(axis=1)
     return float(np.mean(per_row)), float(np.percentile(per_row, 90))
 
-
-# ── feature map ──────────────────────────────────────────────────────────────
 def feature_map(X: np.ndarray) -> np.ndarray:
-    """(N,T,D) → (N, 2D): [mean over time, last timestep]"""
     X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
     return np.concatenate([X.mean(axis=1), X[:, -1, :]], axis=1)
 
 
-# ── impute helpers ────────────────────────────────────────────────────────────
 def impute_linear(X, M):
     N, T, D = X.shape
     X_hat = np.array(X, copy=True)
@@ -109,20 +103,18 @@ def impute_mean(X, M):
     return np.where(M.astype(bool), X, 0.0).astype(np.float32)
 
 
-# ── load baseline imputed.npy ─────────────────────────────────────────────────
 def baseline_path(seed: int, method: str) -> Path:
     return (
         NEWDS_DIR
         / f"seed{seed}"
-        / f"{method}_gait_uci_{RATEPCT}_block{BLOCK_L}_imputed.npy"
+        / f"{method}_gas_home_{RATEPCT}_block{BLOCK_L}_imputed.npy"
     )
 
 
 def ours_checkpoint(seed: int) -> Path:
-    return OURS_CKPT / f"gait_uci_seed{seed}" / "checkpoint.pkl"
+    return OURS_CKPT / f"gas_home_seed{seed}" / "checkpoint.pkl"
 
 
-# ── per-method evaluation ─────────────────────────────────────────────────────
 def run_method(name, seed, X_test, M_eval, row_mask, obs_dims, clf, scaler, y_test):
     if name == "oracle":
         X_hat = X_test.copy()
@@ -165,11 +157,10 @@ def run_method(name, seed, X_test, M_eval, row_mask, obs_dims, clf, scaler, y_te
     return md_mean, auroc
 
 
-# ── main ──────────────────────────────────────────────────────────────────────
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    jsonl_path   = OUT_DIR / "downstream_gait.jsonl"
-    summary_path = OUT_DIR / "downstream_gait_summary.csv"
+    jsonl_path   = OUT_DIR / "downstream_gas.jsonl"
+    summary_path = OUT_DIR / "downstream_gas_summary.csv"
 
     X_train = np.load(DATA_DIR / "X_train.npy").astype(np.float32)
     y_train = np.load(DATA_DIR / "y_train.npy")
@@ -178,8 +169,8 @@ def main():
     M_test  = np.load(DATA_DIR / "M_test.npy").astype(np.int8)
     obs_dims = np.flatnonzero(M_test.sum(axis=(0, 1)) > 0)
 
-    print(f"[E4d] X_train={X_train.shape} y_train counts={dict(zip(*np.unique(y_train, return_counts=True)))}")
-    print(f"[E4d] X_test={X_test.shape}  y_test counts={dict(zip(*np.unique(y_test, return_counts=True)))}")
+    print(f"[E4f] X_train={X_train.shape} y_train counts={dict(zip(*np.unique(y_train, return_counts=True)))}")
+    print(f"[E4f] X_test={X_test.shape}  y_test counts={dict(zip(*np.unique(y_test, return_counts=True)))}")
 
     scaler = StandardScaler()
     X_tr_feat = scaler.fit_transform(feature_map(X_train))
@@ -191,8 +182,8 @@ def main():
     skipped: list[str]  = []
 
     for seed in SEEDS:
-        held   = _apply_block_missing(M_test, BLOCK_L, RATE, seed=seed + 2)
-        M_eval = (M_test & ~held).astype(np.int8)
+        held     = _apply_block_missing(M_test, BLOCK_L, RATE, seed=seed + 2)
+        M_eval   = (M_test & ~held).astype(np.int8)
         row_mask = held.astype(bool).any(axis=2)
 
         for method in all_methods:
@@ -201,19 +192,16 @@ def main():
                 md_mean, auroc = run_method(
                     method, seed, X_test, M_eval, row_mask, clf, scaler, y_test
                 )
-                rec = {"seed": seed, "method": method, "md_mean": md_mean, "auroc": auroc}
-                rows.append(rec)
+                rows.append({"seed": seed, "method": method, "md_mean": md_mean, "auroc": auroc})
                 print(f"OK  {key:<35}  md={md_mean:.4f}  auroc={auroc:.4f}")
             except Exception as e:
                 skipped.append(f"{key}: {e}")
                 print(f"SKIP {key}: {e}", file=sys.stderr)
 
-    # write jsonl
     with jsonl_path.open("w") as f:
         for rec in rows:
             f.write(json.dumps(rec) + "\n")
 
-    # aggregate per method (mean over seeds)
     agg_md:  dict[str, list[float]] = defaultdict(list)
     agg_auc: dict[str, list[float]] = defaultdict(list)
     for rec in rows:
@@ -223,10 +211,10 @@ def main():
     summary_rows = []
     for method in sorted(agg_md, key=lambda m: np.mean(agg_md[m])):
         summary_rows.append({
-            "method":       method,
-            "md_mean_avg":  float(np.mean(agg_md[method])),
-            "auroc_avg":    float(np.mean(agg_auc[method])),
-            "n_seed":       len(agg_md[method]),
+            "method":      method,
+            "md_mean_avg": float(np.mean(agg_md[method])),
+            "auroc_avg":   float(np.mean(agg_auc[method])),
+            "n_seed":      len(agg_md[method]),
         })
 
     with summary_path.open("w") as f:
@@ -234,7 +222,6 @@ def main():
         for sr in summary_rows:
             f.write(f"{sr['method']},{sr['md_mean_avg']:.8f},{sr['auroc_avg']:.8f},{sr['n_seed']}\n")
 
-    # Spearman
     md_vals  = np.array([sr["md_mean_avg"] for sr in summary_rows])
     auc_vals = np.array([sr["auroc_avg"] for sr in summary_rows])
     rx = np.argsort(np.argsort(md_vals))
@@ -243,7 +230,7 @@ def main():
     denom = np.sqrt((xm**2).sum() * (ym**2).sum())
     sp = float((xm * ym).sum() / denom) if denom else float("nan")
 
-    print(f"\n=== downstream_gait_summary (sorted by md_mean_avg) ===")
+    print(f"\n=== downstream_gas_summary (sorted by md_mean_avg) ===")
     print(f"{'method':<14} {'md_mean_avg':>12} {'auroc_avg':>10} {'n_seed':>6}")
     for sr in summary_rows:
         print(f"{sr['method']:<14} {sr['md_mean_avg']:12.6f} {sr['auroc_avg']:10.4f} {sr['n_seed']:6d}")

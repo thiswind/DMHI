@@ -1,4 +1,4 @@
-"""Pipeline numerical trace for ablation debugging (PLAN-EXP-PARALLEL-ABLATION-001)."""
+"""Pipeline numerical trace for ablation debugging."""
 from __future__ import annotations
 
 import json

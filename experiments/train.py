@@ -17,10 +17,10 @@ Datasets without native masks (e.g. cmapss) are treated as fully observed,
 which matches how their baselines were generated.
 
 Usage:
-    python experiments/train_ours.py --dataset gas_home --seed 7 \
-        --out_dir checkpoints/ours
+    python experiments/train.py --dataset gas_home --seed 7 \
+        --out_dir checkpoints/dmhi
 
-    python experiments/eval_ours.py --run_dir checkpoints/ours/gas_home_seed7 \
+    python experiments/evaluate.py --run_dir checkpoints/dmhi/gas_home_seed7 \
         --block_size 20 --seed 7
 """
 import argparse
@@ -50,7 +50,7 @@ def parse_args():
     p.add_argument("--block_size", type=int, default=20,
                    help="Block length (used only when --pattern block)")
     p.add_argument("--seed", type=int, default=7)
-    p.add_argument("--out_dir", default="checkpoints/ours")
+    p.add_argument("--out_dir", default="checkpoints/dmhi")
     # Model hyperparameters — defaults follow the deployed configuration.
     p.add_argument("--d", type=int, default=0,
                    help="latent chart dimension; 0 -> min(12, D-2)")
