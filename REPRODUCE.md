@@ -29,10 +29,18 @@ python experiments/eval_ours.py --run_dir checkpoints/ours/gas_home_seed7 \
 
 Verified reference run (Apple M4, CPU only, Python 3.12): training 0.4 min;
 `MAE=0.150197  RMSE=0.327957  MRE=0.251315  TE=0.259683` against a
-mean-fill MAE of 0.5976. Because DMHI's inference path is deterministic,
-**re-running the evaluation on the same checkpoint and mask reproduces these
-numbers to six decimals**; re-running training with the same seed reproduces
-them up to floating-point reduction order (paper Table on N=4 determinism).
+mean-fill MAE of 0.5976.
+
+**What reproduces exactly, and what does not.** DMHI's *inference* is
+deterministic: the same checkpoint + the same mask reproduce metrics to six
+decimals on any platform (verified: a released-checkpoint evaluation below
+returns `MAE=0.054537` bit-identically on Linux/GPU-trained weights and a
+Mac/CPU re-evaluation). *Training*, however, is hardware-sensitive: the same
+seed on GPU vs CPU yields different Stage II optimization trajectories
+(e.g. the released gas_home checkpoint evaluates at 0.0545, a CPU re-train
+at 0.1502 — both beat mean-fill 0.5976 by a wide margin). Same-hardware
+re-runs are stable (the paper's N=4 determinism table). For bit-exact paper
+numbers, use the released checkpoints (Level 2).
 
 To target a specific reported cell, take its hyperparameters from
 `configs/<domain>_seed<N>.json` (see `configs/README.md`) and pass them to
