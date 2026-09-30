@@ -55,27 +55,34 @@ experiments/
                           CSDI / PSW-I runners (see baselines/README.md)
 configs/                 one JSON per reported paper cell (see configs/README.md)
 data/
-  DATA.md                 dataset provenance, file semantics, fetch instructions
+  processed/              17 of the paper's 20 domains, ready to use (data/DATA.md)
+  DATA.md                 provenance + restricted-domain acquisition routes
   sample/                 tiny synthetic smoke set (make_sample.py regenerates it)
-tests/                   config sanity tests
+scripts/                 dataset rebuild scripts (process_newds, fetch_pulsedb, build_swiss_trajectory, …)
+tests/                   config + shipped-data sanity tests
 smoke_test.py            clone-and-run end-to-end check
 REPRODUCE.md             reproduction guide (checkpoints, masks, determinism)
 ```
 
-Heavy artifacts (processed datasets, trained checkpoints, run logs) are
-**not** part of the repository — see `data/DATA.md` and `REPRODUCE.md`.
+## Training and evaluating a paper domain
 
-## Evaluating a reported cell
-
-After placing the processed splits under `data/processed/` and checkpoints
-under `checkpoints/ours/` (fetch instructions in `REPRODUCE.md` /
-`data/DATA.md`):
+17 of the paper's 20 evaluation domains ship inside the repository
+(`data/processed/`); the three exceptions (DUA-restricted physionet2012 and
+mimic, oversized electricity) have documented acquisition routes in
+`data/DATA.md`. Train the deployed configuration from scratch and evaluate
+with the paper's block-missing protocol:
 
 ```bash
+python experiments/train_ours.py --dataset gas_home --seed 7 \
+    --out_dir checkpoints/ours
 python experiments/eval_ours.py \
-    --run_dir checkpoints/ours/hydraulic_seed7 \
-    --block_size 20 --seed 7 --deterministic
+    --run_dir checkpoints/ours/gas_home_seed7 --block_size 20 --seed 7
 ```
+
+Deterministic inference means the same checkpoint + mask reproduces metrics
+to six decimals. Pretrained checkpoints for all reported cells (~540 MB) are
+distributed as a GitHub release archive; per-cell hyperparameters live in
+`configs/`. Full walkthrough: `REPRODUCE.md` (three levels).
 
 ## Citation
 

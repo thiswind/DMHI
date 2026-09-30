@@ -10,18 +10,19 @@ venv/
 # OS
 .DS_Store
 
-# External author repositories (local checkouts, not redistributable here)
-csdi_official/
-psw_i_official/
+# Raw dataset downloads (data/raw_newds/) — rebuild inputs, not redistributable in bulk
+data/raw_newds/
 
-# Heavy artifacts — not part of the repository (see data/DATA.md, REPRODUCE.md)
+# Heavy artifacts — checkpoints and run outputs are release assets, not git content (see REPRODUCE.md)
 checkpoints/
-data/processed/
-data/raw/
 results/
 runs/
 experiments/logs/
 *.log
+
+# External author repositories (local checkouts, not redistributable here)
+csdi_official/
+psw_i_official/
 
 # Editors / notebooks
 .ipynb_checkpoints/

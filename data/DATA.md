@@ -1,77 +1,88 @@
 # Datasets
 
-## What is in this release
+The paper evaluates DMHI on 20 domains. **17 of them ship directly in this
+repository** under `data/processed/` as ready-to-use `(N, T, D)` arrays —
+for these, reproduction needs no downloads at all. The remaining three are
+restricted or oversized (see the table) with exact acquisition routes below.
 
-`data/processed/` contains the full processed splits for every domain used in the
-paper.  Each domain directory holds the six arrays the harness expects:
+## Processed format (all domains)
 
 ```
-X_train.npy   float32  (N_train, T, D)
-X_val.npy     float32  (N_val,   T, D)
-X_test.npy    float32  (N_test,  T, D)
-M_train.npy   int8     (N_train, T, D)   1 = observed
-M_val.npy     int8     (N_val,   T, D)
-M_test.npy    int8     (N_test,  T, D)
+data/processed/<domain>/
+  X_{train,val,test}.npy   float32 (N, T, D)  z-scored with train statistics
+  M_{train,val,test}.npy   int8   (N, T, D)   1 = observed, 0 = missing
 ```
 
-Domains with a downstream label also have `y_train.npy`, `y_val.npy`, `y_test.npy`.
+Splits are subject-disjoint where a subject id exists (no leakage).
+Evaluation missingness (block, length 20) is applied at run time by
+`experiments/eval_ours.py` / `experiments/baselines/common.py` from the
+cell's `(domain, missing_rate, block_size, seed)` — every method sees
+byte-identical masks.
 
-The stored test mask `M_test` is near-fully observed.  The benchmark protocol
-carves synthetic block-missing gaps at eval time via
-`eval_ours.py::_apply_block_missing`.
+## Domain index
 
-`data/sample/` is a small synthetic smoke set (`(40, 24, 5)`) used only by
-`smoke_test.py`.  It is not related to any reported result.
+| domain | N/T/D (train) | in repo | source | rebuild script |
+|---|---|---|---|---|
+| `hydraulic` | 390/100/17 | ✅ | UCI / ZeMA hydraulic test rig | `scripts/process_newds.py` |
+| `air_quality_italy` | 527/24/13 | ✅ | Italian air quality (De Vito et al.) | `scripts/preprocess_air_italy.py` |
+| `gait_uci` | 180/101/6 | ✅ | UCI gait dynamics | `scripts/process_newds.py` |
+| `mhealth` | 480/100/23 | ✅ | UCI MHEALTH | `scripts/process_newds.py` |
+| `gas_home` | 64/100/10 | ✅ | UCI HT Sensor gas | `scripts/process_newds.py` |
+| `breizh_rs` | 390/45/13 | ✅ | BreizhCrops Sentinel-2 (frh01, L1C) | `scripts/process_newds.py` |
+| `breizh_pheno` | 390/45/13 | ✅ | BreizhCrops (phenology variant) | `scripts/process_newds.py` |
+| `delta_robot` | 340/100/6 | ✅ | Zenodo 13641620 | `scripts/process_newds.py` |
+| `kuka` | 485/100/12 | ✅ | KUKA KR300 R2500 identification benchmark | `scripts/process_newds.py` |
+| `solo12` | 111/100/12 | ✅ | Solo12 quadruped walk recordings | `scripts/process_newds.py` |
+| `nanodrone` | 582/100/14 | ✅ | NanoBench nano-quadrotor | `scripts/process_newds.py` |
+| `nanodrone_dec` | 279/100/14 | ✅ | NanoBench, decimated ~25 Hz | `scripts/process_newds.py` |
+| `mocap_karate` | 34/100/39 | ✅ | MoCap-Impute | `scripts/process_newds.py` |
+| `mc_maze` | 48/70/50 | ✅ | Neural Latents Benchmark MC_Maze_Small (DANDI:000140) | `scripts/process_newds.py` |
+| `pulsedb` | 456/100/3 | ✅ | VitalDB cuff-less BP waveforms | `scripts/fetch_pulsedb.py` + `scripts/process_newds.py` |
+| `swiss_trajectory` | 1600/48/12 | ✅ | synthetic (swiss-roll + OU dynamics, pre-committed seed 20260520) | `scripts/build_swiss_trajectory.py` |
+| `cmapss` | 254/50/14 | ✅ | NASA C-MAPSS | arrays included; data are complete (all-ones masks), no rebuild script needed for reported cells |
+| `physionet2012` | — | ❌ see below | PhysioNet Challenge 2012 | see below |
+| `mimic` | — | ❌ see below | MIMIC-III | see below |
+| `electricity` | — | ❌ see below | long-stream scale study only | see below |
 
-## Domain table
+Array integrity is asserted by `tests/test_data.py` (shapes, masks, 17
+domains).
 
-| Domain | `X_test` shape | Role |
-|---|---|---|
-| `physionet2012` | (4000, 48, 35) | ICU monitoring — primary curved stream |
-| `mimic` | (11, 48, 59) | ICU monitoring — secondary (n_test=11) |
-| `air_quality_italy` | (151, 24, 13) | Monitoring — boundary / low-curvature |
-| `hydraulic` | (120, 100, 17) | Monitoring — boundary / flat manifold |
-| `electricity` | (293, 96, 321) | Long-sequence scaling (Exp-8 only) |
-| `gait_uci` | (60, 101, 6) | Curved array, has downstream label y |
-| `gas_home` | (20, 100, 10) | Curved array, has downstream label y |
-| `mocap_karate` | (11, 100, 39) | Curved array |
-| `delta_robot` | (105, 100, 6) | Curved array |
-| `kuka` | (89, 100, 12) | Curved array |
-| `nanodrone` | (162, 100, 14) | Curved array |
-| `nanodrone_dec` | (78, 100, 14) | Nanodrone decimated (25 Hz) |
-| `mhealth` | (160, 100, 23) | Near-linear boundary array |
-| `breizh_pheno` | (120, 45, 13) | Near-linear boundary array |
-| `breizh_rs` | (120, 45, 13) | Near-linear boundary array |
-| `solo12` | (135, 100, 12) | Near-linear boundary array |
+## Rebuilding a domain from raw sources
 
-## Checkpoints
+`scripts/process_newds.py` regenerates 14 of the in-repo domains from
+`data/raw_newds/<name>/` (raw downloads are not redistributed; each proc
+function documents its upstream). Typical flow:
 
-Trained "Ours" checkpoints live in `../checkpoints/ours/<domain>_seed<N>/`.
-Each checkpoint directory contains:
+```bash
+# pulsedb: fetch raw windows from the VitalDB open API, then process
+python scripts/fetch_pulsedb.py
+python scripts/process_newds.py --dataset pulsedb
 
-- `checkpoint.pkl` — the fitted `RiemannianImputer` object (not tracked in git;
-  see note below)
-- `config.json` — dataset, seed, deployed missing rate, and model
-  hyperparameters consumed by `eval_ours.py`
+# synthetic domain: regenerate bit-for-bit from the pre-committed seed
+python scripts/build_swiss_trajectory.py
+```
 
-The `.pkl` files are excluded from git to avoid committing large binary blobs.
-See `REPRODUCE.md` for how to obtain or re-generate them.
+The in-repo arrays and the rebuild scripts produce the same splits; when in
+doubt, trust the shipped arrays (they are the ones behind the paper tables).
 
-## What is NOT committed to git
+## Domains not in the repository, and how to get them
 
-`.pkl` (checkpoint) and `.npy` (data array) files are large binary files and are
-excluded by `.gitignore`.  This repository tracks only text and JSON.  Readers
-can reconstruct the full release directory by:
+These three are **not redistributed here on purpose**. For each we state the
+reason and the exact reader-side route:
 
-1. Running `python smoke_test.py` to verify the pipeline works on the synthetic
-   sample without any downloads.
-2. Fetching the processed splits and checkpoints as described in `REPRODUCE.md`
-   (Level 2), then placing them under `data/processed/<domain>/` and
-   `checkpoints/ours/<domain>_seed<N>/`.
+| domain | why not in git | how to obtain | then what |
+|---|---|---|---|
+| `physionet2012` | PhysioNet Health Data License / DUA **forbids redistribution** of derived record data | create a free credentialed account at [physionet.org](https://physionet.org/content/challenge-2012/), accept the DUA, download Set A/B | process to the (N,T,D) format with train-statistics z-scoring (protocol as in the paper); or request our processed copy for verification under the same DUA terms |
+| `mimic` | MIMIC-III access requires **credentialed** training and its DUA **forbids redistribution** | apply at [mimic.mit.edu](https://mimic.mit.edu/ivwww/mimic-iii/) (e.gCredentialing), download MIMIC-III Clinical Database | same processing protocol as above; we cannot hand out copies, DUA forbids it |
+| `electricity` | pure size: 215 MB would dominate the repository | shipped as a **release archive** alongside the trained checkpoints (see [REPRODUCE.md](../REPRODUCE.md)); used only by the long-stream scale study | unpack under `data/processed/electricity/` |
 
-## Source provenance
+We deliberately do not ship even "derived" versions of the DUA datasets:
+publishing model outputs that leak record-level values would violate the
+agreements. If you need verification on these domains and hold the
+credentials yourself, open an issue and we will help you run the pipeline on
+your side.
 
-Every domain is built from a public source set.  The naming cross-reference in
-`../paper/body/appendix.tex` (section "Dataset Naming Cross-Reference") maps
-each paper name to its original repository URL.  Processing recipes are in
-`temp_script/process_newds.py` on the training server.
+## Sample data
+
+`data/sample/` contains a tiny synthetic set used by `smoke_test.py`
+(regenerable via `make_sample.py`) — it is not a paper domain.
