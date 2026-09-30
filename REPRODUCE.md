@@ -43,7 +43,7 @@ oversized domains (physionet2012, mimic, electricity) are handled in
 ## Level 2 — released checkpoints + baselines
 
 - **Checkpoints.** The trained "Ours" checkpoints for all reported cells
-  (~540 MB, 51 runs) are distributed as a release archive
+  (≈575 MB uncompressed (51 runs, 252 MB zip)) are distributed as a release archive
   (`dmhi-checkpoints-<version>.zip`, see GitHub *Releases*). Unpack under
   `checkpoints/ours/` and evaluate without retraining:
 
