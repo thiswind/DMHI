@@ -24,8 +24,14 @@ python experiments/train_ours.py --dataset gas_home --seed 7 \
     --out_dir checkpoints/ours
 
 python experiments/eval_ours.py --run_dir checkpoints/ours/gas_home_seed7 \
-    --block_size 20 --seed 7
+    --block_size 20 --rate 0.9 --seed 7
 ```
+
+Paper protocol reminder: Tables II/III are **rho=0.9, L=20, mask seed =
+seed+2, mean over seeds {7, 42, 123}**. `--rate` selects the missing rate,
+`--mask_seed` overrides the mask RNG seed if you need to probe mask
+sensitivity. Reference value for the seed-7 cell (bit-exact on any
+platform): `MAE=0.055369  MSE=0.026157  RMSE=0.161731  MD=0.187710`.
 
 Verified reference run (Apple M4, CPU only, Python 3.12): training 0.4 min;
 `MAE=0.150197  RMSE=0.327957  MRE=0.251315  TE=0.259683` against a

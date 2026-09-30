@@ -120,7 +120,16 @@ def main():
     p.add_argument("--run_dir", required=True, help="Path to run directory with config.json + checkpoint.pkl")
     p.add_argument("--block_size", type=int, default=10,
                    help="Block length for block-missing pattern")
-    p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--rate", type=float, default=None,
+                   help="Missing rate; defaults to config.json's missing_rate. "
+                        "Paper Tables II/III use rho=0.9.")
+    p.add_argument("--seed", type=int, default=42,
+                   help="Reporting seed: selects the paper cell (checkpoint is "
+                        "loaded from run_dir regardless).")
+    p.add_argument("--mask_seed", type=int, default=None,
+                   help="Seed for the eval-mask RNG. Paper convention: "
+                        "mask_seed = seed + 2 (shared with baselines). "
+                        "Default: seed + 2.")
     p.add_argument("--deterministic", action="store_true",
                    help="Enable strict determinism for inference (mirrors train_ours.py).")
     args = p.parse_args()
@@ -132,9 +141,10 @@ def main():
         cfg = json.load(f)
 
     dataset = cfg["dataset"]
-    missing_rate = cfg["missing_rate"]
+    missing_rate = args.rate if args.rate is not None else cfg["missing_rate"]
     pattern = cfg["pattern"]
     train_min = cfg.get("train_min", None)
+    mask_seed = args.mask_seed if args.mask_seed is not None else args.seed + 2
 
     data_dir = pathlib.Path("data/processed") / dataset
     X_train = np.load(data_dir / "X_train.npy").astype(np.float32)
@@ -143,11 +153,11 @@ def main():
 
     # Apply synthetic missingness to produce input mask and eval mask
     if pattern == "mcar":
-        M_eval = _apply_mcar(X_test, M_test, missing_rate, seed=args.seed)
+        M_eval = _apply_mcar(X_test, M_test, missing_rate, seed=mask_seed)
         eval_mask = (M_test == 1) & (M_eval == 0)
     elif pattern == "block":
         block_held_out = _apply_block_missing(
-            M_test, args.block_size, missing_rate, seed=args.seed)
+            M_test, args.block_size, missing_rate, seed=mask_seed)
         eval_mask = block_held_out.astype(bool)
         M_eval = (M_test & ~block_held_out).astype(np.int8)
     else:
@@ -177,9 +187,12 @@ def main():
         "n_eval_entries": int(eval_mask.sum()),
         "mean_fill_mae": round(float(np.abs(X_test[eval_mask]).mean()), 4),
         "MAE": round(mae(X_hat, X_test, eval_mask), 6),
+        "MSE": round(float(((X_hat[eval_mask] - X_test[eval_mask]) ** 2).mean()), 6),
         "RMSE": round(rmse(X_hat, X_test, eval_mask), 6),
         "MRE": round(mre(X_hat, X_test, eval_mask), 6),
         "TE": round(trajectory_error(X_hat, X_test, eval_mask), 6),
+        "MD": round(manifold_deviation(X_hat, X_test, k=5), 6),
+        "mask_seed": int(mask_seed),
         "train_min": round(train_min, 2) if train_min is not None else None,
         "infer_ms_per_sample": round(elapsed_ms, 3),
         "deterministic_train": bool(cfg.get("deterministic", False)),

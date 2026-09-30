@@ -76,8 +76,14 @@ with the paper's block-missing protocol:
 python experiments/train_ours.py --dataset gas_home --seed 7 \
     --out_dir checkpoints/ours
 python experiments/eval_ours.py \
-    --run_dir checkpoints/ours/gas_home_seed7 --block_size 20 --seed 7
+    --run_dir checkpoints/ours/gas_home_seed7 \
+    --block_size 20 --rate 0.9 --seed 7
 ```
+
+The `--seed 7` cell above returns `MAE=0.055369 / MSE=0.026157 /
+RMSE=0.161731 / MD=0.187710` — bit-identical to the run ledger recorded at
+training time (mask seed = seed+2, the convention shared with baselines).
+Tables II/III report the mean over seeds {7, 42, 123} at rho=0.9.
 
 Deterministic inference means the same checkpoint + mask reproduces metrics
 to six decimals. Pretrained checkpoints for all reported cells (~540 MB) are

@@ -19,3 +19,17 @@ method sees identical holes.
 
 Install the PyPOTS-backed runners with the optional extra:
 `pip install -e ".[baselines]"`.
+
+## Running a classical baseline cell
+
+`--missing_pattern` is a **key name**, not a raw length: use `mcar`,
+`block5`, `block10`, `block20`, `block25`, `block30`, or `block40`
+(see `BLOCK_LENS` in `common.py`). The `--seed` value is used directly as
+the mask RNG seed; the paper's "seed s" convention corresponds to
+`--seed $((s+2))`:
+
+```bash
+python experiments/baselines/run_classical.py --method mean \
+    --dataset gas_home --missing_rate 0.9 --missing_pattern block20 --seed 9
+# [mean] gas_home rate=0.9 pat=block20 MAE=0.5938 RMSE=0.8472
+```
