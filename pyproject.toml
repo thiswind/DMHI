@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dmhi"
+version = "0.1.0"
+description = "Deterministic Manifold Harmonic Imputation for edge-deployable multivariate time series"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Kuang Hu" },
+    { name = "Ruihang Wang" },
+    { name = "Kun Yue" },
+    { name = "Xilong Liu" },
+    { name = "Jiahui Wang" },
+]
+keywords = [
+    "time series",
+    "imputation",
+    "missing data",
+    "manifold learning",
+    "graph signal processing",
+    "edge computing",
+    "internet of things",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "torch",
+    "matplotlib",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+baselines = ["pypots>=1.0", "h5py", "pandas"]
+dev = ["pytest"]
+
+[project.urls]
+Repository = "https://github.com/thiswind/DMHI"
+Issues = "https://github.com/thiswind/DMHI/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]

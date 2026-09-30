@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# OS
+.DS_Store
+
+# External author repositories (local checkouts, not redistributable here)
+csdi_official/
+psw_i_official/
+
+# Heavy artifacts — not part of the repository (see data/DATA.md, REPRODUCE.md)
+checkpoints/
+data/processed/
+data/raw/
+results/
+runs/
+experiments/logs/
+*.log
+
+# Editors / notebooks
+.ipynb_checkpoints/
+.vscode/
+.idea/
