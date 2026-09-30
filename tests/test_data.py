@@ -20,19 +20,22 @@ NOT_IN_REPO = {"physionet2012", "mimic", "electricity"}
 
 
 def _tracked_domains():
-    out = subprocess.run(
-        ["git", "ls-files", "--", str(ROOT.relative_to(ROOT.parents[2]))],
-        cwd=ROOT.parents[2], capture_output=True, text=True, check=True,
-    ).stdout
-    doms = {pathlib.Path(l).parts[-2] for l in out.splitlines() if l.strip()}
-    return doms
+    repo = ROOT.parents[2]
+    try:
+        out = subprocess.run(
+            ["git", "ls-files", "--", "data/processed"],
+            cwd=repo, capture_output=True, text=True, check=True,
+        ).stdout
+    except Exception:
+        return set()
+    return {pathlib.Path(l).parts[-2] for l in out.splitlines() if l.strip()}
 
 
 def _fs_domains():
     return {d.name for d in ROOT.iterdir() if d.is_dir() and any(d.glob("*.npy"))}
 
 
-DOMAINS = sorted(_tracked_domains() or _fs_domains())
+DOMAINS = sorted(_tracked_domains() - NOT_IN_REPO or _fs_domains() - NOT_IN_REPO)
 
 
 def test_seventeen_domains_shipped():
