@@ -8,7 +8,7 @@ Dataset : gait_uci  (X_test shape: 60 × 101 × 6)
 Task    : classify gait condition (3 classes) → macro OvR AUROC
 Seeds   : 7, 42, 123  (same seeds used for imputation)
 
-Run from the server repo root (conda activate riemann_baselines):
+Run from the repository root (dependencies installed):
   python _work/code/e4d_downstream_gait.py
 
 Outputs:

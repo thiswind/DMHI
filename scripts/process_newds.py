@@ -10,7 +10,7 @@ harness (block20), so the masks written here are all-ones (data are complete).
 Splits are subject-disjoint where a subject id exists, to avoid leakage.
 Per-channel z-score uses train statistics only.
 
-Usage (run from repo root, conda env riemann_baselines):
+Usage (run from the repository root, with dependencies installed):
   python scripts/process_newds.py --dataset gait_uci
   python scripts/process_newds.py --dataset mocap_karate
   python scripts/process_newds.py --dataset mhealth

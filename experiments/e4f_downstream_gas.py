@@ -8,7 +8,7 @@ Dataset : gas_home  (X_test shape: 20 × 100 × 10)
 Task    : classify home activity (banana / wine / ...) → macro OvR AUROC
 Seeds   : 7, 42, 123
 
-Run from the server repo root (conda activate riemann_baselines):
+Run from the repository root (dependencies installed):
   python _work/code/e4f_downstream_gas.py
 
 Outputs:

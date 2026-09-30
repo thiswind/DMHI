@@ -12,7 +12,7 @@ produce varying imputations and downstream decisions.
 Deterministic methods (DMHI, classical, and learned models at eval mode)
 should produce bit-identical outputs across repetitions.
 
-Run from server repo root (conda activate riemann_baselines):
+Run from the repository root (dependencies installed):
   python _work/code/e4g_n4_determinism.py
   python _work/code/e4g_n4_determinism.py --domains gait_uci gas_home physionet2012
 
