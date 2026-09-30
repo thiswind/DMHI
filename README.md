@@ -39,6 +39,23 @@ Fits a deliberately tiny `RiemannianImputer` on the synthetic sample in
 `data/sample/`, carves a block hold-out, imputes it, and checks finiteness
 and observed-entry preservation. Runs in seconds on CPU.
 
+## The 30-second speed demo (Table IV)
+
+DMHI's headline claim is CPU-only, millisecond inference — ~840× faster than
+the diffusion baseline CSDI on the same CPU. See it yourself after
+unpacking the checkpoint release under `checkpoints/ours/`:
+
+```bash
+python experiments/benchmark_speed.py
+```
+
+It times DMHI per-sample inference on every released checkpoint (44 runs,
+all on plain CPU) against linear interpolation and mean fill on identical
+data and masks, then prints the paper's reference numbers side by side.
+Verified on an Apple M4: DMHI lands at 1.7–8.0 ms/sample across all
+domains (paper: 5.8 ms), while CSDI needs 4900.6 ms on the same CPU —
+**845×**. One flag, `--domain gas_home`, benchmarks a single domain.
+
 ## Repository layout
 
 ```

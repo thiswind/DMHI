@@ -12,6 +12,7 @@ import torch
 import torch.nn as nn
 from typing import Callable, Optional
 import logging
+import os
 try:
     from tqdm import tqdm as _tqdm
     _HAS_TQDM = True
@@ -41,6 +42,10 @@ from .trace import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _env_flag(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
 
 
 def get_device() -> torch.device:
@@ -1546,7 +1551,8 @@ class RiemannianImputer:
 
         # --- PLAN-EXP-ABLATION-004 Stage A: report Karcher stats ---
         _karcher_stats = get_karcher_stats()
-        print(f"[ABL-004 diagnostic] karcher_stats: {_karcher_stats}", flush=True)
+        if not _env_flag("DMHI_SILENT"):
+            print(f"[ABL-004 diagnostic] karcher_stats: {_karcher_stats}", flush=True)
         logger.info(f"karcher_stats: {_karcher_stats}")
 
         return hat_X
