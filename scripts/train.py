@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Train DMHI (RiemannianImputer) on a processed dataset and save a checkpoint.
+"""Fit DMHI (RiemannianImputer) on a processed dataset and save a checkpoint.
 
-This is the training entry point behind the paper's "Ours" checkpoints. The
+Note: the paper's deployed form is training-free (zero trained parameters);
+this entry point regenerates the checkpoint artifacts (Stage I embedding +
+Stage II metric refinement) for research reproducibility. This is the
+fitting entry point behind the paper's "Ours" checkpoints. The
 deployed configuration (see configs/ and REPRODUCE.md) corresponds to the
 defaults used here: d = min(12, D-2) unless overridden, k=10, k_clle=9,
 r_L=0.30, lambda_F=1e-5, epochs=200 (Stage I and Stage II), patience=20,

@@ -12,12 +12,15 @@ python tests/test_smoke.py
 Fits a `RiemannianImputer` on the synthetic `src/dmhi/utils/sample/` set and checks
 the pipeline end to end: finite errors, observed entries preserved.
 
-## Level 1 — train + evaluate a real paper domain (minutes, no downloads)
+## Level 1 — evaluate a paper domain end to end (minutes, no downloads)
 
 **17 of the paper's 20 domains ship inside this repository** under
-`data/processed/` (see `data/DATA.md`) — nothing to download. Train the
-deployed configuration from scratch, then evaluate it exactly as the paper
-does (block missingness, length 20, deterministic):
+`data/processed/` (see `data/DATA.md`) — nothing to download. DMHI needs
+**no training phase to impute**; to keep this level download-free, the
+command below first regenerates the checkpoint's fitting stages locally
+(Stage I embedding + Stage II metric refinement — minutes on a laptop CPU),
+then evaluates exactly as the paper does (block missingness, length 20,
+deterministic):
 
 ```bash
 python scripts/train.py --dataset gas_home --seed 7 \
