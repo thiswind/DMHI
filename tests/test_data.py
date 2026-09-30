@@ -3,17 +3,36 @@
 Asserts the 17 redistributed domains load, have consistent (N, T, D) shapes
 between X and M arrays, and masks are binary. Uses mmap so the whole suite
 runs in seconds.
+
+Domain inventory is taken from *git-tracked* files, so unpacking the
+release archive (e.g. data/processed/electricity/) does not fail the
+shipped-domain assertions.
 """
 import pathlib
+import subprocess
 
 import numpy as np
 import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1] / "data" / "processed"
 SPLITS = ("train", "val", "test")
-DOMAINS = sorted(d.name for d in ROOT.iterdir() if d.is_dir())
-
 NOT_IN_REPO = {"physionet2012", "mimic", "electricity"}
+
+
+def _tracked_domains():
+    out = subprocess.run(
+        ["git", "ls-files", "--", str(ROOT.relative_to(ROOT.parents[2]))],
+        cwd=ROOT.parents[2], capture_output=True, text=True, check=True,
+    ).stdout
+    doms = {pathlib.Path(l).parts[-2] for l in out.splitlines() if l.strip()}
+    return doms
+
+
+def _fs_domains():
+    return {d.name for d in ROOT.iterdir() if d.is_dir() and any(d.glob("*.npy"))}
+
+
+DOMAINS = sorted(_tracked_domains() or _fs_domains())
 
 
 def test_seventeen_domains_shipped():
