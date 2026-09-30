@@ -54,7 +54,8 @@ all on plain CPU) against linear interpolation and mean fill on identical
 data and masks, then prints the paper's reference numbers side by side.
 Verified on an Apple M4: DMHI lands at 1.7–8.0 ms/sample across all
 domains (paper: 5.8 ms), while CSDI needs 4900.6 ms on the same CPU —
-**845×**. One flag, `--domain gas_home`, benchmarks a single domain.
+**~840×** (4900.6 / 5.8 = 845). One flag, `--domain gas_home`, benchmarks
+a single domain.
 
 ## Repository layout
 

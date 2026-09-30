@@ -1,42 +1,35 @@
-ALLOW pull provenance (2026-08-02)
-==================================
+Analysis-runner provenance (ALLOW pull, 2026-08-02)
+===================================================
 
-Source: [training-server]
-Policy: gap_provenance_audit plan §6.1 ALLOW only
+Policy: gap_provenance_audit plan section 6.1, ALLOW-only
         (effective runners + e4a md_ksens; no DENY/HOLD results)
 
 Pulled into code/experiments/:
   e4a_md_ksensitivity.py
   e4b_downstream_md.py
   e4d_downstream_gait.py
-  e4f_downstream_gas.py
   e4g_n4_determinism.py
-  _code_root.py          (local path adapter; not from server)
+  e4f_downstream_gas.py
+  _code_root.py          (local path adapter)
 
 Pulled into paper/assets/data_derived/:
-  md_ksens.jsonl         (from experiments/logs/e4a/; 36 lines)
+  md_ksens.jsonl         (36 records, k in {3,5,10,20})
 
-LOCKED (not overwritten):
-  paper/assets/data_derived/downstream_physionet_summary.csv
-  paper/assets/data_derived/downstream_gait_summary.csv
-  paper/assets/data_derived/downstream_gas_summary.csv
+Locked (not overwritten, paper SSOT unchanged):
+  downstream_physionet_summary.csv
+  downstream_gait_summary.csv
+  downstream_gas_summary.csv
 
-NOT pulled (DENY / HOLD):
+Not pulled (DENY / HOLD):
   e4d/e4f summary CSVs (stale vs paper SSOT)
   ablation2|4 use_decoder logs
   stage3_auto_loop / stage3_rewrite results
-  exp5_ksens_multidomain.json (HOLD FAIL 2026-08-02; see
-    collab_rebuild/round_16_20260801_experiment_rewrite/analysis/exp5_hold_audit_20260802.txt)
-
-Storyline (same day, plan remainder):
-  M0 evidence back-links C3 MD tables + md_ksens.jsonl pointer
-  C2 E2.3 fake Fréchet evidence removed
-  gaps[] records NEW Stage III / Frechet / d + HOLD→NEW exp5
-
+  exp5_ksens_multidomain.json (HOLD FAIL 2026-08-02)
 
 Run notes:
-  These runners expect server-side data/processed/ and experiments/logs/*
-  (checkpoints, baseline imputations). They are for provenance / re-run on
-  SOFIA or a fully synced worktree — not a laptop-only smoke path.
-  Execute from anywhere; REPO resolves to code/ via _code_root.py.
-  Example: conda activate base && cd code && python experiments/e4b_downstream_md.py
+  These analysis runners expect the full server-side data tree
+  (data/processed/ plus experiments/logs/* with checkpoints and
+  baseline imputations); they are provenance/re-run tools, not a
+  laptop-only smoke path. They resolve the repo root automatically
+  via _code_root.py, e.g.:
+      python experiments/e4b_downstream_md.py

@@ -3,9 +3,9 @@
 SAME saved imputed arrays + SAME canonical masks as plan048, and test whether the
 method RANKING by MD is stable across k (Spearman vs the k=5 ranking).
 
-Run ON SERVER from repo root (~/workspaces/riemannian-ts-imputation),
-conda env riemann_baselines:
-    python e4a_md_ksensitivity.py --out experiments/logs/e4a/md_ksens.jsonl
+Run from the repository root with the full data tree in place (see
+experiments/e4_ALLOW_PROVENANCE.txt):
+    python experiments/e4a_md_ksensitivity.py --out experiments/logs/e4a/md_ksens.jsonl
 
 Reuses: experiments.eval_ours._apply_block_missing, plan047.manifold_deviation_rows.
 No retraining; ours re-imputed deterministically from released checkpoints.
