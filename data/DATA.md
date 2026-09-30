@@ -15,7 +15,7 @@ data/processed/<domain>/
 
 Splits are subject-disjoint where a subject id exists (no leakage).
 Evaluation missingness (block, length 20) is applied at run time by
-`experiments/evaluate.py` / `experiments/baselines/common.py` from the
+`experiments/evaluate.py` / `scripts/baselines/common.py` from the
 cell's `(domain, missing_rate, block_size, seed)` — every method sees
 byte-identical masks.
 

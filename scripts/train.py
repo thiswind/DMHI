@@ -17,10 +17,10 @@ Datasets without native masks (e.g. cmapss) are treated as fully observed,
 which matches how their baselines were generated.
 
 Usage:
-    python experiments/train.py --dataset gas_home --seed 7 \
+    python scripts/train.py --dataset gas_home --seed 7 \
         --out_dir checkpoints/dmhi
 
-    python experiments/evaluate.py --run_dir checkpoints/dmhi/gas_home_seed7 \
+    python scripts/evaluate.py --run_dir checkpoints/dmhi/gas_home_seed7 \
         --block_size 20 --seed 7
 """
 import argparse

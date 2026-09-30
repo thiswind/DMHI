@@ -12,10 +12,10 @@ method sees identical holes.
 | `run_saits.py` | PyPOTS (>=1.0) | calls `pypots.imputation.SAITS` / `pypots.imputation.BRITS`; data interface via `saits_data_adapter.py` |
 | `run_timemixer.py` | PyPOTS | library wrapper (v3.2); data interface via `timemixer_data_adapter.py` |
 | `run_imputeformer.py` | PyPOTS | calls the PyPOTS ImputeFormer implementation |
-| `run_csdi.py` | authors' repo, local checkout | wraps `csdi_official/` (official CSDI code) via the `OurPhysioDataset` adapter; the runner resolves the checkout as a sibling of `experiments/` — not included in this repository, fetch upstream into `csdi_official/` |
+| `run_csdi.py` | authors' repo, local checkout | wraps `csdi_official/` (official CSDI code) via the `OurPhysioDataset` adapter; the runner resolves the checkout as a sibling of `scripts/` — not included in this repository, fetch upstream into `csdi_official/` |
 | `run_psw_i.py` | authors' repo, extracted class | PSW-I (ICLR 2025); `OTImputationIni` extracted from `psw_i_official/benchmark.py` and adapted to our data interface — not included, fetch upstream into `psw_i_official/` |
 | `run_downstream.py` | built-in | downstream evaluation for baseline imputations |
-| `aggregate_baseline_results.py`, `check_baseline_results.py`, `monitor_experiments.py` | built-in | aggregation, sanity checks, run monitoring |
+| `aggregate_baseline_results.py` | built-in | result aggregation across runs |
 
 Install the PyPOTS-backed runners with the optional extra:
 `pip install -e ".[baselines]"`.
@@ -29,7 +29,7 @@ the mask RNG seed; the paper's "seed s" convention corresponds to
 `--seed $((s+2))`:
 
 ```bash
-python experiments/baselines/run_classical.py --method mean \
+python scripts/baselines/run_classical.py --method mean \
     --dataset gas_home --missing_rate 0.9 --missing_pattern block20 --seed 9
 # [mean] gas_home rate=0.9 pat=block20 MAE=0.5938 RMSE=0.8472
 ```

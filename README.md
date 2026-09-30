@@ -32,7 +32,7 @@ Python >= 3.10; CPU is sufficient for inference and for the smoke test.
 ## Quick start (no data required)
 
 ```bash
-python smoke_test.py
+python tests/test_smoke.py
 ```
 
 Fits a deliberately tiny `RiemannianImputer` on the synthetic sample in
@@ -46,7 +46,7 @@ the diffusion baseline CSDI on the same CPU. See it yourself after
 unpacking the checkpoint release under `checkpoints/dmhi/`:
 
 ```bash
-python experiments/benchmark_speed.py
+python scripts/benchmark_speed.py
 ```
 
 It times DMHI per-sample inference on every released checkpoint (44 runs,
@@ -66,19 +66,22 @@ src/dmhi/method/        The deployed pipeline (importable package)
   mhb.py                  Stage II: manifold harmonic basis + soft graph-spline
   clle.py                 Stage III: symmetric CLLE inverse projection
   metric.py, utils.py     graph construction and helpers
-experiments/
+scripts/
+  train.py               train the deployed configuration on a paper domain
   evaluate.py            evaluate a saved checkpoint on a test split
-  e4*.py                  paper analyses (MD k-sensitivity, downstream, N=4 determinism)
+  benchmark_speed.py     the 30-second CPU speed demo (Table IV)
+  downstream_md_auroc.py, downstream_{gas,gait}_classify.py,
+  md_k_sensitivity.py, determinism_check.py
+                         paper analyses (see scripts/ANALYSIS_RUNNERS.md)
   baselines/              classical / SAITS / BRITS / TimeMixer / ImputeFormer /
                           CSDI / PSW-I runners (see baselines/README.md)
 configs/                 one JSON per reported paper cell (see configs/README.md)
 data/
   processed/              17 of the paper's 20 domains, ready to use (data/DATA.md)
   DATA.md                 provenance + restricted-domain acquisition routes
-  sample/                 tiny synthetic smoke set (src/dmhi/utils/make_sample.py regenerates it)
-scripts/                 dataset rebuild scripts (process_newds, fetch_pulsedb, build_swiss_trajectory, …)
-tests/                   config + shipped-data sanity tests
-smoke_test.py            clone-and-run end-to-end check
+  dataset rebuild scripts (process_newds, fetch_pulsedb, build_swiss_trajectory, …)
+tests/                   smoke + config + shipped-data sanity tests
+results/                 expected metrics for reproduction spot checks
 REPRODUCE.md             reproduction guide (checkpoints, masks, determinism)
 ```
 
@@ -91,9 +94,9 @@ mimic, oversized electricity) have documented acquisition routes in
 with the paper's block-missing protocol:
 
 ```bash
-python experiments/train.py --dataset gas_home --seed 7 \
+python scripts/train.py --dataset gas_home --seed 7 \
     --out_dir checkpoints/dmhi
-python experiments/evaluate.py \
+python scripts/evaluate.py \
     --run_dir checkpoints/dmhi/gas_home_seed7 \
     --block_size 20 --rate 0.9 --seed 7
 ```

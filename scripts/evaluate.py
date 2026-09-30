@@ -3,7 +3,7 @@
 
 Usage:
     conda activate base
-    python experiments/evaluate.py --run_dir experiments/logs/<run_id>/
+    python scripts/evaluate.py --run_dir experiments/logs/<run_id>/
 
 Outputs metrics.json in the run directory.
 """
@@ -18,9 +18,9 @@ import time
 import numpy as np
 import torch
 
-sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
-sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
 from dmhi.method.pipeline import RiemannianImputer
+from dmhi.utils.eval_protocol import apply_block_missing as _apply_block_missing
 
 
 def set_seed(seed: int, deterministic: bool = False):

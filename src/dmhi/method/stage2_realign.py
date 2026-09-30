@@ -73,8 +73,8 @@ def _sample_pullback_cache(
         from experiments.embedder_pullback import embedder_pullback_at
     except ImportError as exc:
         raise NotImplementedError(
-            "Stage-II realign training needs experiments.embedder_pullback, an "
-            "internal ablation module not shipped in this release. The deployed "
+            "Stage-II realign training needs the embedder-pullback ablation "
+            "module, which is not shipped in this release. The deployed "
             "imputer (stage2_method='mhb') does not use it."
         ) from exc
 

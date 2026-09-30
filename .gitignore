@@ -17,7 +17,7 @@ data/raw_newds/
 checkpoints/
 results/
 runs/
-experiments/logs/
+scripts/**/logs/
 *.log
 
 # External author repositories (local checkouts, not redistributable here)

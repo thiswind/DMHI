@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 
 import numpy as np
 
+from dmhi.utils.eval_protocol import apply_block_missing  # canonical mask protocol
+
 
 # ---------------------------------------------------------------------------
 # Data loading

@@ -40,20 +40,15 @@ from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 
 # ALLOW pull: unify root resolution with sibling e4_* runners.
-from _code_root import code_root
 
-REPO = code_root(Path(__file__))
+
+REPO = Path(__file__).resolve().parents[1]
 os.chdir(REPO)
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "src"))
 
-from experiments.evaluate import _apply_block_missing
-from experiments.baselines.common import apply_block_missing as _apply_block_missing  # V6 realized override
-from experiments.baselines.common import (
-    load_dataset,
-    make_input_mask,
-    apply_block_missing,
-)
+from dmhi.utils.eval_protocol import apply_block_missing as _apply_block_missing
+from baselines.common import load_dataset, make_input_mask
 
 OUT_DIR = REPO / "experiments/logs/determinism"
 OURS_CKPT = REPO / "experiments/logs/recompute033/ours"

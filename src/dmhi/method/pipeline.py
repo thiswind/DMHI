@@ -1212,8 +1212,8 @@ class RiemannianImputer:
                     from experiments.embedder_pullback import embedder_pullback_at
                 except ImportError as exc:
                     raise NotImplementedError(
-                        "pullback_blend_epsilon>0 needs experiments.embedder_pullback, "
-                        "an internal ablation module not part of this release. "
+                        "pullback_blend_epsilon>0 needs the embedder-pullback ablation "
+                        "module, which is not part of this release. "
                         "The deployed path uses the default pullback_blend_epsilon=0.0."
                     ) from exc
 

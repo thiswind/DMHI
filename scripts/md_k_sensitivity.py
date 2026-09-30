@@ -4,7 +4,7 @@ SAME saved imputed arrays + SAME canonical masks as plan048, and test whether th
 method RANKING by MD is stable across k (Spearman vs the k=5 ranking).
 
 Run from the repository root with the full data tree in place (see
-experiments/ANALYSIS_RUNNERS.md):
+scripts/ANALYSIS_RUNNERS.md):
     python experiments/md_k_sensitivity.py --out experiments/logs/md_k_sensitivity/md_ksens.jsonl
 
 Reuses: experiments.evaluate._apply_block_missing, the shared manifold-deviation helper.
@@ -21,12 +21,12 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 # ALLOW pull: resolve code/ root even when cwd is elsewhere.
-from _code_root import code_root  # noqa: E402
+
 
 REPO = code_root(pathlib.Path(__file__))
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "src"))
-from experiments.evaluate import _apply_block_missing  # noqa: E402
+from dmhi.utils.eval_protocol import apply_block_missing as _apply_block_missing  # noqa: E402
 from dmhi.method.pipeline import RiemannianImputer  # noqa: E402
 
 KS = [3, 5, 10, 20]

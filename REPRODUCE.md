@@ -6,7 +6,7 @@ Three levels, increasing in data requirements.
 
 ```bash
 pip install -e .            # or: pip install -r requirements.txt
-python smoke_test.py
+python tests/test_smoke.py
 ```
 
 Fits a `RiemannianImputer` on the synthetic `src/dmhi/utils/sample/` set and checks
@@ -20,10 +20,10 @@ deployed configuration from scratch, then evaluate it exactly as the paper
 does (block missingness, length 20, deterministic):
 
 ```bash
-python experiments/train.py --dataset gas_home --seed 7 \
+python scripts/train.py --dataset gas_home --seed 7 \
     --out_dir checkpoints/dmhi
 
-python experiments/evaluate.py --run_dir checkpoints/dmhi/gas_home_seed7 \
+python scripts/evaluate.py --run_dir checkpoints/dmhi/gas_home_seed7 \
     --block_size 20 --rate 0.9 --seed 7
 ```
 
@@ -62,7 +62,7 @@ oversized domains (physionet2012, mimic, electricity) are handled in
   `checkpoints/dmhi/` and evaluate without retraining:
 
   ```bash
-  python experiments/evaluate.py --run_dir checkpoints/dmhi/hydraulic_seed7 \
+  python scripts/evaluate.py --run_dir checkpoints/dmhi/hydraulic_seed7 \
       --block_size 20 --seed 7 --deterministic
   ```
 
@@ -70,7 +70,7 @@ oversized domains (physionet2012, mimic, electricity) are handled in
   (hyperparameters exact; see `configs/README.md` for the reconstruction
   caveat on non-primary domains).
 
-- **Baselines.** `experiments/baselines/` runs classical and PyPOTS
+- **Baselines.** `scripts/baselines/` runs classical and PyPOTS
   baselines (`run_classical.py`, `run_saits.py`, `run_timemixer.py`,
   `run_imputeformer.py`, …) on the same shipped arrays with byte-identical
   masks (`baselines/common.py`); PyPOTS runners need
@@ -80,7 +80,7 @@ oversized domains (physionet2012, mimic, electricity) are handled in
   `baselines/README.md`).
 
 - **e4 analyses.** MD k-sensitivity, downstream transfer, N=4 determinism:
-  `experiments/e4*.py`, consuming the same artifacts.
+  `scripts/md_k_sensitivity.py`, `scripts/downstream_*.py`, `scripts/determinism_check.py`, consuming the same artifacts.
 
 ## Notes for reviewers
 

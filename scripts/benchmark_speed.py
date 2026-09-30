@@ -7,9 +7,9 @@ numbers side by side. Domains are auto-discovered from
 ``checkpoints/dmhi/<domain>_seed<*>`` intersected with ``data/processed``.
 
 Usage:
-    python experiments/benchmark_speed.py                      # all domains
-    python experiments/benchmark_speed.py --domain gas_home    # one domain
-    python experiments/benchmark_speed.py --n 30               # sample count
+    python scripts/benchmark_speed.py                      # all domains
+    python scripts/benchmark_speed.py --domain gas_home    # one domain
+    python scripts/benchmark_speed.py --n 30               # sample count
 
 Paper Table IV (Apple M4, CPU): DMHI 5.8 ms vs CSDI 4900.6 ms (~840x).
 """
@@ -42,8 +42,8 @@ RUN_DIR_RE = re.compile(r"^(?P<domain>.+)_seed(?P<seed>\d+)$")
 
 
 def _apply_block_missing(M, L, rate, seed):
-    from experiments.evaluate import _apply_block_missing as _abm
-    return _abm(M, L, rate, seed=seed)
+    from dmhi.utils.eval_protocol import apply_block_missing
+    return apply_block_missing(M, L, rate, seed=seed)
 
 
 def time_call(fn, X, M, warmup=3):

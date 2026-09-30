@@ -6,24 +6,25 @@ No data download is required. The test fits a deliberately tiny
 imputes it, and checks that the result is finite and that observed entries are
 preserved. It runs in a few seconds on CPU.
 
-    python smoke_test.py
+    python tests/test_smoke.py        # direct run
+    pytest tests/test_smoke.py        # via pytest
 
 If PyTorch or the method package is unavailable, the test skips cleanly with a
 non-failing message, so it never blocks an environment that only builds the
 paper.
 """
+import os
 import pathlib
 import sys
 
 import numpy as np
 
-HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(HERE / "src"))
+REPO = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "src"))
 
 
 def _load_sample() -> tuple[np.ndarray, np.ndarray]:
-    sample = HERE / "src" / "dmhi" / "utils" / "sample"
+    sample = REPO / "src" / "dmhi" / "utils" / "sample"
     if not (sample / "X.npy").exists():
         from dmhi.utils import make_sample
 
@@ -83,3 +84,7 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def test_smoke_run():
+    assert main() == 0
