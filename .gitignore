@@ -28,3 +28,6 @@ psw_i_official/
 .ipynb_checkpoints/
 .vscode/
 .idea/
+
+# oversized domain unpacked from the release archive (not git content)
+data/processed/electricity/
