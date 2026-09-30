@@ -15,8 +15,9 @@ data/raw_newds/
 
 # Heavy artifacts — checkpoints and run outputs are release assets, not git content (see REPRODUCE.md)
 checkpoints/
-results/
 runs/
+results/*
+!results/README.md
 scripts/**/logs/
 *.log
 
