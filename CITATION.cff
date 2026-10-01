@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+title: >-
+  DMHI: Deterministic Manifold Harmonic Imputation for Edge Deployable
+  Multivariate Time Series
+message: >-
+  If you use this software, please cite it using the metadata below, and the
+  associated paper once published in the IEEE Internet of Things Journal.
+type: software
+authors:
+  - family-names: Hu
+    given-names: Kuang
+    orcid: "https://orcid.org/0000-0002-3178-9097"
+    affiliation: Yunnan University
+  - family-names: Wang
+    given-names: Ruihang
+    orcid: "https://orcid.org/0000-0001-8827-9373"
+    affiliation: Yunnan University
+  - family-names: Yue
+    given-names: Kun
+    orcid: "https://orcid.org/0000-0003-3641-1461"
+    affiliation: Yunnan University
+  - family-names: Liu
+    given-names: Xilong
+    orcid: "https://orcid.org/0000-0002-1912-2775"
+    affiliation: Yunnan University
+  - family-names: Wang
+    given-names: Jiahui
+    orcid: "https://orcid.org/0000-0001-6333-3230"
+    affiliation: Yunnan University
+version: 0.1.0
+date-released: "2026-09-30"
+license: MIT
+repository-code: "https://github.com/thiswind/DMHI"
+abstract: >-
+  Reference implementation of DMHI, a deterministic manifold-harmonic
+  imputation method for multivariate time series with block missingness.
+  The deployed inference path (Embed -> intrinsic Compute -> inverse Project)
+  carries no neural-network weights, which makes the method suitable for edge
+  deployment. This repository provides the method package, the evaluation
+  harness, baseline runners, and the per-cell configurations used in the
+  accompanying paper (under review at the IEEE Internet of Things Journal).
+keywords:
+  - time series
+  - imputation
+  - missing data
+  - manifold learning
+  - graph signal processing
+  - edge computing

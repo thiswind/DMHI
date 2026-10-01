@@ -1,0 +1,16 @@
+# Core dependencies. Python >= 3.10. Unpinned by design; the validated set is
+# recorded per release in the repository release notes.
+numpy
+scipy
+scikit-learn
+torch
+matplotlib
+tqdm
+
+# Optional: deep-learning baselines from scratch (scripts/baselines/)
+# pypots>=1.0
+# h5py
+# pandas
+
+# Optional: test suite
+# pytest

@@ -1,0 +1,19 @@
+{
+  "dataset": "delta_robot",
+  "missing_rate": 0.7,
+  "pattern": "block",
+  "block_size": 20,
+  "seed": 0,
+  "d": 4,
+  "k": 10,
+  "k_clle": 9,
+  "epochs": 200,
+  "lr": 0.0001,
+  "lambda_F": 1e-05,
+  "lambda_smooth": 0.0001,
+  "batch_size": 64,
+  "patience": 20,
+  "train_min": null,
+  "run_id": "delta_robot_seed0",
+  "deterministic": false
+}

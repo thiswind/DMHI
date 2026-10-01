@@ -1,0 +1,19 @@
+{
+  "dataset": "swiss_trajectory",
+  "missing_rate": 0.7,
+  "pattern": "block",
+  "block_size": 20,
+  "seed": 42,
+  "d": 8,
+  "k": 10,
+  "k_clle": 9,
+  "epochs": 200,
+  "lr": 0.0001,
+  "lambda_F": 0.0001,
+  "lambda_smooth": 0.0001,
+  "batch_size": 64,
+  "patience": 20,
+  "train_min": 10.41,
+  "run_id": "swiss_trajectory_blockbs20_70_seed42",
+  "deterministic": true
+}

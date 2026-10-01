@@ -1,0 +1,19 @@
+{
+  "dataset": "gas_home",
+  "missing_rate": 0.7,
+  "pattern": "block",
+  "block_size": 20,
+  "seed": 7,
+  "d": 8,
+  "k": 10,
+  "k_clle": 9,
+  "epochs": 200,
+  "lr": 0.0001,
+  "lambda_F": 1e-05,
+  "lambda_smooth": 0.0001,
+  "batch_size": 64,
+  "patience": 20,
+  "train_min": null,
+  "run_id": "gas_home_seed7",
+  "deterministic": false
+}

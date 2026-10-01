@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# OS
+.DS_Store
+
+# Raw dataset downloads (data/raw_newds/) — rebuild inputs, not redistributable in bulk
+data/raw_newds/
+
+# Heavy artifacts — checkpoints and run outputs are release assets, not git content (see REPRODUCE.md)
+checkpoints/
+runs/
+results/*
+!results/README.md
+scripts/**/logs/
+*.log
+
+# External author repositories (local checkouts, not redistributable here)
+csdi_official/
+psw_i_official/
+
+# Editors / notebooks
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# oversized domain unpacked from the release archive (not git content)
+data/processed/electricity/
+
+# DUA-restricted ICU domains — obtain under your own PhysioNet credential
+# (acquisition routes in data/DATA.md); never redistributed from this repo
+data/processed/mimic/
+data/processed/physionet2012/
