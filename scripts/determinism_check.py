@@ -13,12 +13,12 @@ Deterministic methods (DMHI, classical, and learned models at eval mode)
 should produce bit-identical outputs across repetitions.
 
 Run from the repository root (dependencies installed):
-  python _work/code/determinism_check.py
-  python _work/code/determinism_check.py --domains gait_uci gas_home physionet2012
+  python scripts/determinism_check.py
+  python scripts/determinism_check.py --domains gait_uci gas_home physionet2012
 
 Outputs:
-  experiments/logs/determinism/n4_determinism.jsonl
-  experiments/logs/determinism/n4_determinism_summary.csv
+  runs/determinism/n4_determinism.jsonl
+  runs/determinism/n4_determinism_summary.csv
 """
 from __future__ import annotations
 
@@ -50,9 +50,9 @@ sys.path.insert(0, str(REPO / "src"))
 from dmhi.utils.eval_protocol import apply_block_missing as _apply_block_missing
 from baselines.common import load_dataset, make_input_mask
 
-OUT_DIR = REPO / "experiments/logs/determinism"
-OURS_CKPT = REPO / "experiments/logs/recompute033/ours"
-LEGACY_BASELINE = REPO / "experiments/logs/baselines"
+OUT_DIR = REPO / "runs/determinism"
+OURS_CKPT = REPO / "runs/recompute033/ours"
+LEGACY_BASELINE = REPO / "runs/baselines"
 
 MASK_SEED = 7
 RATE = 0.9
@@ -86,29 +86,29 @@ def domain_configs() -> dict[str, DomainCfg]:
         "gait_uci": DomainCfg(
             name="gait_uci",
             data_dir=REPO / "data/processed/gait_uci",
-            baseline_dir=REPO / "experiments/logs/newds_v2/gait_uci/seed7",
+            baseline_dir=REPO / "runs/newds_v2/gait_uci/seed7",
             ours_prefix="gait_uci",
             task="multiclass",
             csdi_pk=REPO
-            / "experiments/logs/newds_v2/gait_uci/seed7/csdi/gait_uci/rate90_block20/generated_outputs_nsample50.pk",
+            / "runs/newds_v2/gait_uci/seed7/csdi/gait_uci/rate90_block20/generated_outputs_nsample50.pk",
         ),
         "gas_home": DomainCfg(
             name="gas_home",
             data_dir=REPO / "data/processed/gas_home",
-            baseline_dir=REPO / "experiments/logs/newds_v2/gas_home/seed7",
+            baseline_dir=REPO / "runs/newds_v2/gas_home/seed7",
             ours_prefix="gas_home",
             task="multiclass",
             csdi_pk=REPO
-            / "experiments/logs/newds_v2/gas_home/seed7/csdi/gas_home/rate90_block20/generated_outputs_nsample50.pk",
+            / "runs/newds_v2/gas_home/seed7/csdi/gas_home/rate90_block20/generated_outputs_nsample50.pk",
         ),
         "physionet2012": DomainCfg(
             name="physionet2012",
             data_dir=REPO / "data/processed/physionet2012",
-            baseline_dir=REPO / "experiments/logs/paper_v3/baselines/seed7",
+            baseline_dir=REPO / "runs/paper_v3/baselines/seed7",
             ours_prefix="physionet2012",
             task="binary",
             csdi_pk=REPO
-            / "experiments/logs/paper_v3/baselines/seed7/csdi/physionet2012/rate90_block20/generated_outputs_nsample50.pk",
+            / "runs/paper_v3/baselines/seed7/csdi/physionet2012/rate90_block20/generated_outputs_nsample50.pk",
         ),
     }
 

@@ -9,11 +9,11 @@ Usage (single config):
         --dataset physionet2012 \\
         --missing_rate 0.3 \\
         --missing_pattern mcar \\
-        --out_dir experiments/logs/baselines \\
+        --out_dir runs/baselines \\
         --seed 42
 
 Usage (all configs):
-    python run_classical.py --all_configs --out_dir experiments/logs/baselines
+    python run_classical.py --all_configs --out_dir runs/baselines
 """
 
 import argparse
@@ -157,7 +157,7 @@ def main():
     parser.add_argument("--dataset", default="physionet2012")
     parser.add_argument("--missing_rate", type=float, default=0.3)
     parser.add_argument("--missing_pattern", default="mcar")
-    parser.add_argument("--out_dir", default="experiments/logs/baselines")
+    parser.add_argument("--out_dir", default="runs/baselines")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--all_configs", action="store_true",
                         help="Run all methods × datasets × rates × patterns")

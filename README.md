@@ -49,7 +49,7 @@ unpacking the checkpoint release under `checkpoints/dmhi/`:
 python scripts/benchmark_speed.py
 ```
 
-It times DMHI per-sample inference on every released checkpoint (44 runs,
+It times DMHI per-sample inference on every released checkpoint (50 runs,
 all on plain CPU) against linear interpolation and mean fill on identical
 data and masks, then prints the paper's reference numbers side by side.
 Verified on an Apple M4: DMHI lands at 1.7–8.0 ms/sample across all
@@ -77,7 +77,7 @@ scripts/
                           CSDI / PSW-I runners (see baselines/README.md)
 configs/                 one JSON per reported paper cell (see configs/README.md)
 data/
-  processed/              17 of the paper's 20 domains, ready to use (data/DATA.md)
+  processed/              12 of the paper's evaluation domains, ready to use (data/DATA.md)
   DATA.md                 provenance + restricted-domain acquisition routes
   dataset rebuild scripts (process_newds, fetch_pulsedb, build_swiss_trajectory, …)
 tests/                   smoke + config + shipped-data sanity tests
@@ -87,10 +87,12 @@ REPRODUCE.md             reproduction guide (checkpoints, masks, determinism)
 
 ## Imputing a paper domain — no training required
 
-17 of the paper's 20 evaluation domains ship inside the repository
-(`data/processed/`); the three exceptions (DUA-restricted physionet2012 and
-mimic, oversized electricity) have documented acquisition routes in
-`data/DATA.md`.
+The paper reports Tables II/III on 12 domains. Ten of them ship inside the
+repository (`data/processed/`); the two exceptions (DUA-restricted
+physionet2012 and mimic) have documented acquisition routes in
+`data/DATA.md`. The repository additionally ships the remaining arrays and
+checkpoints from the broader evaluation campaign — see `data/DATA.md` for
+the full inventory and `results/README.md` for the domain-to-metric ledger.
 
 The paper's headline property carries over to the code: **DMHI's deployed
 form uses zero trained parameters and requires no training phase**. Impute
@@ -102,15 +104,20 @@ python scripts/evaluate.py \
     --block_size 20 --rate 0.9 --seed 7
 ```
 
-The `--seed 7` cell above returns `MAE=0.055369 / MSE=0.026157 /
-RMSE=0.161731 / MD=0.187710` — bit-identical to the run ledger recorded at
-checkpoint-production time (mask seed = seed+2, the convention shared with
-baselines). Tables II/III report the mean over seeds {7, 42, 123} at rho=0.9.
+The command above returns `MAE=0.051499 / MSE=0.020727 /
+RMSE=0.143970 / MD=0.198470`, matching the paper's gas_home cell at the three
+decimals used in Table II/III (0.051 / 0.020 / 0.143 / 0.197; mask seed =
+seed+2, the convention shared with baselines). Tables II/III report the mean
+over seeds, listed per domain in `results/README.md`.
 
 Deterministic inference means the same checkpoint + mask reproduces metrics
-to six decimals. Pretrained checkpoints for all reported cells (~540 MB) are
-distributed as a GitHub release archive; per-cell hyperparameters live in
-`configs/`. Full walkthrough: `REPRODUCE.md` (three levels).
+to six decimals **within one environment**. Across platforms the linear
+algebra differs by BLAS backend (Apple Accelerate vs Linux/OpenBLAS), which
+shifts the third decimal by about `1e-3`; no such shift changes any
+bold/underline verdict in the paper. Pretrained checkpoints for all reported
+cells (~207 MB zip, 50 runs) are distributed as a GitHub release archive;
+per-cell hyperparameters live in `configs/`. Full walkthrough:
+`REPRODUCE.md` (three levels).
 
 Researchers who want to regenerate a checkpoint from scratch (Stage I
 embedding + Stage II metric refinement) can use `scripts/train.py` — see

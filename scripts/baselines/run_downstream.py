@@ -6,14 +6,14 @@ Trains a 2-layer LSTM classifier on imputed time series from each baseline metho
 evaluates AUC-ROC and F1 on physionet2012 and mimic test sets.
 
 Reads:
-  experiments/logs/baselines/<method>_<dataset>_<rate>_<pattern>_imputed.npy
+  runs/baselines/<method>_<dataset>_<rate>_<pattern>_imputed.npy
   data/processed/<dataset>/y_test.npy
 
 Writes:
-  experiments/logs/baselines/downstream_results.json
+  runs/baselines/downstream_results.json
 
 Usage:
-    python run_downstream.py --out_dir experiments/logs/baselines
+    python run_downstream.py --out_dir runs/baselines
 """
 
 import argparse
@@ -117,7 +117,7 @@ def train_and_eval(X_train: np.ndarray, y_train: np.ndarray,
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out_dir", default="experiments/logs/baselines")
+    parser.add_argument("--out_dir", default="runs/baselines")
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()

@@ -9,11 +9,11 @@ Task    : classify home activity (banana / wine / ...) → macro OvR AUROC
 Seeds   : 7, 42, 123
 
 Run from the repository root (dependencies installed):
-  python _work/code/downstream_gas_classify.py
+  python scripts/downstream_gas_classify.py
 
 Outputs:
-  experiments/logs/downstream_gas/downstream_gas.jsonl
-  experiments/logs/downstream_gas/downstream_gas_summary.csv
+  runs/downstream_gas/downstream_gas.jsonl
+  runs/downstream_gas/downstream_gas_summary.csv
 """
 from __future__ import annotations
 
@@ -40,9 +40,9 @@ sys.path.insert(0, str(REPO / "src"))
 from dmhi.utils.eval_protocol import apply_block_missing as _apply_block_missing
 
 DATA_DIR    = REPO / "data/processed/gas_home"
-OUT_DIR     = REPO / "experiments/logs/downstream_gas"
-NEWDS_DIR   = REPO / "experiments/logs/newds_v2/gas_home"
-OURS_CKPT   = REPO / "experiments/logs/recompute033/ours"
+OUT_DIR     = REPO / "runs/downstream_gas"
+NEWDS_DIR   = REPO / "runs/newds_v2/gas_home"
+OURS_CKPT   = REPO / "runs/recompute033/ours"
 
 SEEDS        = [7, 42, 123]
 RATE         = 0.9

@@ -4,12 +4,12 @@ Aggregate all per-method metrics.json files into baseline_summary.json.
 
 Also merges downstream_results.json (AUC-ROC / F1) if it exists.
 
-Writes: experiments/logs/baselines/baseline_summary.json
+Writes: runs/baselines/baseline_summary.json
 
 Usage:
     conda activate base
-    python experiments/baselines/aggregate_baseline_results.py \\
-        --out_dir experiments/logs/baselines
+    python scripts/baselines/aggregate_baseline_results.py \\
+        --out_dir runs/baselines
 """
 
 import argparse
@@ -93,7 +93,7 @@ def print_table(summary: dict):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out_dir", default="experiments/logs/baselines")
+    parser.add_argument("--out_dir", default="runs/baselines")
     args = parser.parse_args()
 
     summary = aggregate(args.out_dir)

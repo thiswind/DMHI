@@ -25,9 +25,9 @@ sys.path.insert(0, str(REPO / "src"))
 from dmhi.utils.eval_protocol import apply_block_missing as _apply_block_missing
 
 DATA_DIR = REPO / "data/processed/physionet2012"
-OUT_DIR = REPO / "experiments/logs/downstream_md"
-BASELINE_DIR = REPO / "experiments/logs/bench_v2/physionet2012"
-OURS_DIR = REPO / "experiments/logs/recompute033/ours"
+OUT_DIR = REPO / "runs/downstream_md"
+BASELINE_DIR = REPO / "runs/bench_v2/physionet2012"
+OURS_DIR = REPO / "runs/recompute033/ours"
 
 SEEDS = [7, 42, 123]
 RATE = 0.9

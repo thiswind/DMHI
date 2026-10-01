@@ -7,7 +7,7 @@ reference_repos/baselines/timemixer_official/run.py) and inherited that
 pipeline's `--task_name imputation` quirk: official TimeMixer evaluates only
 on an internally generated MCAR mask, so block-missing cells reported the
 MAE on the wrong target (mre=1.0 for all PhysioNet block-* cells). See
-``experiments/logs/paper_v3/PROGRESS.md`` 2026-05-29T06:48 entry and
+the TimeMixer-official rewrite notes
 for the full diagnosis.
 
 This rewrite uses PyPOTS' own TimeMixer implementation (`pypots.imputation.TimeMixer`),
@@ -25,10 +25,10 @@ Usage (single config):
         --missing_rate 0.5 \\
         --missing_pattern block20 \\
         --gpu 0 \\
-        --out_dir experiments/logs/baselines
+        --out_dir runs/baselines
 
 Usage (all configs):
-    python run_timemixer.py --all_configs --gpu 0 --out_dir experiments/logs/baselines
+    python run_timemixer.py --all_configs --gpu 0 --out_dir runs/baselines
 """
 
 import argparse
@@ -184,7 +184,7 @@ def main():
     parser.add_argument("--missing_rate", type=float, default=0.5)
     parser.add_argument("--missing_pattern", default="block20")
     parser.add_argument("--gpu", type=int, default=0)
-    parser.add_argument("--out_dir", default="experiments/logs/baselines")
+    parser.add_argument("--out_dir", default="runs/baselines")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--all_configs", action="store_true")
     parser.add_argument("--smoke", action="store_true",

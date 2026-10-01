@@ -86,48 +86,6 @@ def apply_mcar(M_orig: np.ndarray, rate: float, seed: int = 42) -> np.ndarray:
     return eval_mask
 
 
-def apply_block_missing(M_orig: np.ndarray, block_len: int, rate: float,
-                        seed: int = 42) -> np.ndarray:
-    """
-    Apply block-wise missingness on top of original observation mask.
-
-    For each sample and feature, randomly selects contiguous blocks of
-    `block_len` timesteps to hold out, targeting `rate` overall fraction.
-
-    Parameters
-    ----------
-    M_orig : (N, T, D) float32
-    block_len : int
-    rate : float  — approximate fraction of observed positions to hold out
-    seed : int
-
-    Returns
-    -------
-    eval_mask : (N, T, D) float32
-    """
-    rng = np.random.default_rng(seed)
-    N, T, D = M_orig.shape
-    eval_mask = np.zeros_like(M_orig)
-
-    blocks_per_sample = max(1, int(round(T * rate / block_len)))
-
-    for n in range(N):
-        for d in range(D):
-            obs_times = np.where(M_orig[n, :, d] == 1)[0]
-            if len(obs_times) < block_len:
-                continue
-            placed = 0
-            attempts = 0
-            while placed < blocks_per_sample and attempts < 50:
-                attempts += 1
-                start = rng.integers(0, T - block_len + 1)
-                block_idx = np.arange(start, start + block_len)
-                if np.all(M_orig[n, block_idx, d] == 1):
-                    eval_mask[n, block_idx, d] = 1
-                    placed += 1
-    return eval_mask.astype(np.float32)
-
-
 def make_input_mask(M_orig: np.ndarray, eval_mask: np.ndarray) -> np.ndarray:
     """
     Return input mask: original observed positions minus eval positions.

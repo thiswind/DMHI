@@ -7,7 +7,7 @@ torch
 matplotlib
 tqdm
 
-# Optional: deep-learning baselines from scratch (experiments/baselines/)
+# Optional: deep-learning baselines from scratch (scripts/baselines/)
 # pypots>=1.0
 # h5py
 # pandas

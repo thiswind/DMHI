@@ -27,7 +27,10 @@ not redistributed, see `../REPRODUCE.md`).
 
 ## Index
 
-20 domains, 55 files:
+20 domains, 55 files. The ten domains that ship inside the repository cover
+the twelve domains reported in the paper's Tables II and III; the remaining
+domains come from the broader evaluation campaign (ablations and scale
+studies) and are listed in `data/DATA.md`:
 
 - `hydraulic`: 4 files
 - 16 domains with 3 files each: `air_quality_italy`, `breizh_pheno`,

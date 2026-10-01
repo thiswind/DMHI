@@ -32,3 +32,8 @@ psw_i_official/
 
 # oversized domain unpacked from the release archive (not git content)
 data/processed/electricity/
+
+# DUA-restricted ICU domains — obtain under your own PhysioNet credential
+# (acquisition routes in data/DATA.md); never redistributed from this repo
+data/processed/mimic/
+data/processed/physionet2012/

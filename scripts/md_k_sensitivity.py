@@ -3,12 +3,13 @@
 SAME saved imputed arrays + SAME canonical masks as plan048, and test whether the
 method RANKING by MD is stable across k (Spearman vs the k=5 ranking).
 
-Run from the repository root with the full data tree in place (see
+Run from the repository root with the full run tree in place (see
 scripts/ANALYSIS_RUNNERS.md):
-    python experiments/md_k_sensitivity.py --out experiments/logs/md_k_sensitivity/md_ksens.jsonl
+    python scripts/md_k_sensitivity.py --out runs/md_k_sensitivity/md_ksens.jsonl
 
-Reuses: experiments.evaluate._apply_block_missing, the shared manifold-deviation helper.
-No retraining; ours re-imputed deterministically from released checkpoints.
+Reuses: dmhi.utils.eval_protocol.apply_block_missing, the shared
+manifold-deviation helper. No retraining; ours re-imputed deterministically
+from released checkpoints.
 Focus cells: rate in {0.5,0.9}, L in {10,20,30,40}, seeds {7,42,123},
 datasets {physionet2012, air_quality_italy, hydraulic, mimic}.
 """
@@ -20,10 +21,7 @@ import sys
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
-# ALLOW pull: resolve code/ root even when cwd is elsewhere.
-
-
-REPO = code_root(pathlib.Path(__file__))
+REPO = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "src"))
 from dmhi.utils.eval_protocol import apply_block_missing as _apply_block_missing  # noqa: E402
@@ -35,8 +33,8 @@ SEEDS = [7, 42, 123]
 ARRAY_METHODS = ["brits", "saits", "csdi", "imputeformer", "timemixer", "psw_i"]
 GRID_L = [10, 20, 30, 40]
 GRID_RATE = [0.5, 0.9]
-OURS_ROOT = REPO / "experiments/logs/recompute033/ours"
-BASE_ROOT = REPO / "experiments/logs/paper_v3/baselines"
+OURS_ROOT = REPO / "runs/recompute033/ours"
+BASE_ROOT = REPO / "runs/paper_v3/baselines"
 
 
 def md_rows_multi_k(X_hat, X_true, row_mask, ks, obs_dims=None):
@@ -77,7 +75,7 @@ def spearman(rank_a, rank_b):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="experiments/logs/md_k_sensitivity/md_ksens.jsonl")
+    ap.add_argument("--out", default="runs/md_k_sensitivity/md_ksens.jsonl")
     ap.add_argument("--limit", type=int, default=0)
     args = ap.parse_args()
     out = pathlib.Path(args.out)

@@ -9,11 +9,11 @@ Task    : classify gait condition (3 classes) → macro OvR AUROC
 Seeds   : 7, 42, 123  (same seeds used for imputation)
 
 Run from the repository root (dependencies installed):
-  python _work/code/downstream_gait_classify.py
+  python scripts/downstream_gait_classify.py
 
 Outputs:
-  experiments/logs/downstream_gait/downstream_gait.jsonl
-  experiments/logs/downstream_gait/downstream_gait_summary.csv
+  runs/downstream_gait/downstream_gait.jsonl
+  runs/downstream_gait/downstream_gait_summary.csv
 """
 from __future__ import annotations
 
@@ -41,9 +41,9 @@ from dmhi.utils.eval_protocol import apply_block_missing as _apply_block_missing
 
 # ── paths ────────────────────────────────────────────────────────────────────
 DATA_DIR    = REPO / "data/processed/gait_uci"
-OUT_DIR     = REPO / "experiments/logs/downstream_gait"
-NEWDS_DIR   = REPO / "experiments/logs/newds_v2/gait_uci"
-OURS_CKPT   = REPO / "experiments/logs/recompute033/ours"
+OUT_DIR     = REPO / "runs/downstream_gait"
+NEWDS_DIR   = REPO / "runs/newds_v2/gait_uci"
+OURS_CKPT   = REPO / "runs/recompute033/ours"
 
 SEEDS        = [7, 42, 123]
 RATE         = 0.9

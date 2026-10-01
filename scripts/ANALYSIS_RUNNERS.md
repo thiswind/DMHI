@@ -1,18 +1,17 @@
-Analysis-runner provenance (ALLOW pull, 2026-08-02)
-===================================================
+Analysis-runner provenance
+==========================
 
 Policy: gap_provenance_audit plan section 6.1, ALLOW-only
         (effective runners + MD k-sensitivity analysis)
 
-Pulled into code/experiments/:
+Provenance runners in `scripts/`:
   md_k_sensitivity.py
   downstream_md_auroc.py
   downstream_gait_classify.py
   determinism_check.py
   downstream_gas_classify.py
-  _code_root.py          (local path adapter)
 
-Pulled into paper/assets/data_derived/:
+Derived asset archived in `paper/assets/data_derived/`:
   md_ksens.jsonl         (36 records, k in {3,5,10,20})
 
 Locked (not overwritten, paper SSOT unchanged):
@@ -27,9 +26,10 @@ Not pulled (DENY / HOLD):
   exp5_ksens_multidomain.json (HOLD FAIL 2026-08-02)
 
 Run notes:
-  These analysis runners expect the full server-side data tree
-  (data/processed/ plus experiments/logs/* with checkpoints and
-  baseline imputations); they are provenance/re-run tools, not a
-  laptop-only smoke path. They resolve the repo root automatically
-  via _code_root.py, e.g.:
-      python experiments/downstream_md_auroc.py
+  These analysis runners expect the full data tree (data/processed/
+  plus runs/* holding checkpoints and baseline imputations); they are
+  provenance/re-run tools, not a laptop-only smoke path. They resolve
+  the repository root automatically from their own location, e.g.:
+
+      python scripts/downstream_md_auroc.py
+      python scripts/md_k_sensitivity.py --out runs/md_k_sensitivity/md_ksens.jsonl

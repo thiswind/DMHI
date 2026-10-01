@@ -2,8 +2,8 @@
 """Evaluate a saved RiemannianImputer checkpoint on a test split.
 
 Usage:
-    conda activate base
-    python scripts/evaluate.py --run_dir experiments/logs/<run_id>/
+    python scripts/evaluate.py --run_dir checkpoints/dmhi/<domain>_seed<seed>/
+                               [--block_size 20] [--rate 0.9] [--seed 7]
 
 Outputs metrics.json in the run directory.
 """
@@ -21,6 +21,8 @@ import torch
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
 from dmhi.method.pipeline import RiemannianImputer
 from dmhi.utils.eval_protocol import apply_block_missing as _apply_block_missing
+from dmhi.utils.eval_protocol import (manifold_deviation as _manifold_deviation,
+                                      observed_dims as _observed_dims)
 
 
 def set_seed(seed: int, deterministic: bool = False):
@@ -49,30 +51,6 @@ def _apply_mcar(X: np.ndarray, M_orig: np.ndarray, rate: float, seed: int):
     return (M_orig & synth).astype(np.int8)
 
 
-def _apply_block_missing(M_orig: np.ndarray, block_size: int,
-                         rate: float, seed: int) -> np.ndarray:
-    """Apply synthetic block missingness on top of M_orig. Returns eval mask (1=held-out)."""
-    rng = np.random.default_rng(seed)
-    N, T, D = M_orig.shape
-    eval_mask = np.zeros_like(M_orig)
-    blocks_per_sample = max(1, int(round(T * rate / block_size)))
-    for n in range(N):
-        for d in range(D):
-            obs_times = np.where(M_orig[n, :, d] == 1)[0]
-            if len(obs_times) < block_size:
-                continue
-            placed = 0
-            attempts = 0
-            while placed < blocks_per_sample and attempts < 50:
-                start = rng.integers(0, T - block_size + 1)
-                block_idx = np.arange(start, start + block_size)
-                if np.all(M_orig[n, block_idx, d] == 1):
-                    eval_mask[n, block_idx, d] = 1
-                    placed += 1
-                attempts += 1
-    return eval_mask
-
-
 def mae(X_hat, X_true, eval_mask):
     return float(np.abs(X_hat[eval_mask] - X_true[eval_mask]).mean())
 
@@ -99,16 +77,15 @@ def trajectory_error(X_hat: np.ndarray, X_true: np.ndarray, eval_mask: np.ndarra
     return float(np.mean(te_list)) if te_list else float("nan")
 
 
-def manifold_deviation(X_hat: np.ndarray, X_true: np.ndarray, k: int = 5) -> float:
-    """MD: mean distance of imputed points from the k-NN manifold of observed (eq 9)."""
-    from sklearn.neighbors import NearestNeighbors
-    N, T, D = X_hat.shape
-    X_obs_flat = X_true.reshape(-1, D)
-    X_hat_flat = X_hat.reshape(-1, D)
-    nn = NearestNeighbors(n_neighbors=k, algorithm="auto")
-    nn.fit(X_obs_flat)
-    dists, _ = nn.kneighbors(X_hat_flat)
-    return float(dists.mean())
+def manifold_deviation(X_hat: np.ndarray, X_true: np.ndarray,
+                       eval_mask: np.ndarray, k: int = 5):
+    """MD: mean k-NN distance of the imputed time steps to the manifold (eq 9).
+
+    See :func:`dmhi.utils.eval_protocol.manifold_deviation`; the query set is
+    restricted to the time steps that actually contain held-out entries, and
+    the distance is taken over channels observed in the split.
+    """
+    return _manifold_deviation(X_hat, X_true, eval_mask, k=k)
 
 
 # ---------------------------------------------------------------------------
@@ -118,8 +95,10 @@ def manifold_deviation(X_hat: np.ndarray, X_true: np.ndarray, k: int = 5) -> flo
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--run_dir", required=True, help="Path to run directory with config.json + checkpoint.pkl")
-    p.add_argument("--block_size", type=int, default=10,
-                   help="Block length for block-missing pattern")
+    p.add_argument("--block_size", type=int, default=None,
+                   help="Block length for block-missing pattern; defaults to "
+                        "config.json's block_size. Paper Tables II/III use the "
+                        "per-domain block length recorded in the checkpoint config.")
     p.add_argument("--rate", type=float, default=None,
                    help="Missing rate; defaults to config.json's missing_rate. "
                         "Paper Tables II/III use rho=0.9.")
@@ -144,7 +123,9 @@ def main():
     missing_rate = args.rate if args.rate is not None else cfg["missing_rate"]
     pattern = cfg["pattern"]
     train_min = cfg.get("train_min", None)
-    mask_seed = args.mask_seed if args.mask_seed is not None else args.seed + 2
+    run_seed = int(cfg.get("seed", args.seed))
+    block_size = args.block_size if args.block_size is not None else cfg.get("block_size", 20)
+    mask_seed = args.mask_seed if args.mask_seed is not None else run_seed + 2
 
     data_dir = pathlib.Path("data/processed") / dataset
     X_train = np.load(data_dir / "X_train.npy").astype(np.float32)
@@ -157,7 +138,7 @@ def main():
         eval_mask = (M_test == 1) & (M_eval == 0)
     elif pattern == "block":
         block_held_out = _apply_block_missing(
-            M_test, args.block_size, missing_rate, seed=mask_seed)
+            M_test, block_size, missing_rate, seed=mask_seed)
         eval_mask = block_held_out.astype(bool)
         M_eval = (M_test & ~block_held_out).astype(np.int8)
     else:
@@ -174,12 +155,13 @@ def main():
     elapsed_ms = (time.time() - t0) / len(X_test) * 1000
 
     N_test, T, D = X_test.shape
+    md_mean, md_p90 = manifold_deviation(X_hat, X_test, eval_mask, k=5)
     metrics = {
         "dataset": dataset,
         "missing_rate": missing_rate,
         "pattern": pattern,
-        "block_size": args.block_size if pattern == "block" else None,
-        "seed": args.seed,
+        "block_size": block_size if pattern == "block" else None,
+        "seed": run_seed,
         "n_train": int(X_train.shape[0]),
         "n_test": int(N_test),
         "T": int(T),
@@ -191,7 +173,10 @@ def main():
         "RMSE": round(rmse(X_hat, X_test, eval_mask), 6),
         "MRE": round(mre(X_hat, X_test, eval_mask), 6),
         "TE": round(trajectory_error(X_hat, X_test, eval_mask), 6),
-        "MD": round(manifold_deviation(X_hat, X_test, k=5), 6),
+        "md_mean": round(md_mean, 6),
+        "md_p90": round(md_p90, 6),
+        "MD": round(md_mean, 6),
+        "n_obs_dims": int(len(_observed_dims(M_test))),
         "mask_seed": int(mask_seed),
         "train_min": round(train_min, 2) if train_min is not None else None,
         "infer_ms_per_sample": round(elapsed_ms, 3),

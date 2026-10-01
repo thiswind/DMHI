@@ -14,10 +14,10 @@ Usage (single config):
         --missing_rate 0.3 \\
         --missing_pattern mcar \\
         --gpu 1 \\
-        --out_dir experiments/logs/baselines
+        --out_dir runs/baselines
 
 Usage (all configs):
-    CUDA_VISIBLE_DEVICES=1 python run_psw_i.py --all_configs --gpu 1 --out_dir experiments/logs/baselines
+    CUDA_VISIBLE_DEVICES=1 python run_psw_i.py --all_configs --gpu 1 --out_dir runs/baselines
 """
 
 import argparse
@@ -140,7 +140,7 @@ def main():
     parser.add_argument("--missing_rate", type=float, default=0.3)
     parser.add_argument("--missing_pattern", default="mcar")
     parser.add_argument("--gpu", type=int, default=1)
-    parser.add_argument("--out_dir", default="experiments/logs/baselines")
+    parser.add_argument("--out_dir", default="runs/baselines")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--all_configs", action="store_true")
     args = parser.parse_args()
