@@ -33,12 +33,12 @@ over the seeds listed in the last column, then averaged.
 
 Parentheses are the values printed in the paper. Ten of the twelve domains
 agree to the three decimals used in the tables (48 cells; 33 exact at three
-decimals, 15 within +/-0.007). Crucially, **no discrepancy changes any
-bold/underline verdict in the paper**: every cell the paper marks "DMHI best"
-remains the repository's best as well. Where the repository is
-*better* than the paper it is marked in the table above as a strict
-improvement (mocap_karate MAE/RMSE/MD, gas_home RMSE, solo12 MD,
-mimic MSE/RMSE, physionet2012 MD).
+decimals, 13 within +/-0.007, 2 beyond it — both in `mimic`). Crucially,
+**no discrepancy changes any bold/underline verdict in the paper**: every
+cell the paper marks "DMHI best" remains the repository's best as well. On
+eight cells the repository is strictly better than the printed paper value
+(mocap_karate MAE/RMSE/MD, gas_home RMSE, solo12 MD, mimic MSE/RMSE,
+physionet2012 MD).
 
 `mimic` and `physionet2012` carry the largest residuals (up to 0.024 in MSE).
 They are the two DUA-gated domains whose arrays are **not** in this
@@ -53,8 +53,9 @@ bit-for-bit; what is *not* bit-identical across platforms is the
 floating-point arithmetic underneath the linear algebra. Verified on this
 repository:
 
-- the same three `.pkl` weights deserialize to bit-identical arrays (max
-  absolute leaf difference 0.0 across 293 arrays);
+- the released `.pkl` weights deserialize to bit-identical arrays across the
+  three seeds of a domain (each domain carries a fixed array set per seed —
+  e.g. `gas_home` 148, `air_quality_italy` 50, `mimic` 74, `physionet2012` 92);
 - the deployed path is device-independent (MPS vs CPU give the same result);
 - re-evaluating under a pinned environment matching the paper's stack
   (`numpy 2.2.6 / scipy 1.15.3 / scikit-learn 1.7.2`) reproduces the
@@ -75,6 +76,6 @@ decimals by comparing within a single environment; expect agreement to about
 | BRITS | 2.8 | GPU | training-time ledger |
 
 `python scripts/benchmark_speed.py` re-measures the DMHI column locally:
-verified 1.7-8.0 ms/sample across all 50 released runs on Apple M4, i.e.
-within the paper's reported 5.8 ms CPU latency and ~840x faster than CSDI on
-the same CPU.
+verified 1.8-8.2 ms/sample across all 50 released runs on Apple M4, i.e.
+around the paper's reported 5.8 ms CPU latency and ~840x faster than CSDI
+on the same CPU.

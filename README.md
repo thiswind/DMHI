@@ -52,10 +52,10 @@ python scripts/benchmark_speed.py
 It times DMHI per-sample inference on every released checkpoint (50 runs,
 all on plain CPU) against linear interpolation and mean fill on identical
 data and masks, then prints the paper's reference numbers side by side.
-Verified on an Apple M4: DMHI lands at 1.7–8.0 ms/sample across all
-domains (paper: 5.8 ms), while CSDI needs 4900.6 ms on the same CPU —
-**~840×** (4900.6 / 5.8 = 845). One flag, `--domain gas_home`, benchmarks
-a single domain.
+Verified on an Apple M4: DMHI lands at 1.8–8.2 ms/sample across all 50
+runs — around the paper's reported 5.8 ms — while CSDI needs 4900.6 ms on
+the same CPU, i.e. **~840×** the paper's 5.8 ms DMHI latency. One flag,
+`--domain gas_home`, benchmarks a single domain.
 
 ## Repository layout
 
@@ -66,10 +66,14 @@ src/dmhi/method/        The deployed pipeline (importable package)
   mhb.py                  Stage II: manifold harmonic basis + soft graph-spline
   clle.py                 Stage III: symmetric CLLE inverse projection
   metric.py, utils.py     graph construction and helpers
+  + 8 supporting modules  (karcher, losses, stitch, window_filter, …)
 scripts/
   train.py               train the deployed configuration on a paper domain
   evaluate.py            evaluate a saved checkpoint on a test split
   benchmark_speed.py     the 30-second CPU speed demo (Table IV)
+  process_newds.py       rebuild a shipped domain from data/raw_newds/
+  fetch_pulsedb.py, build_swiss_trajectory.py, preprocess_air_italy.py
+                         per-domain data acquisition / preprocessing
   downstream_md_auroc.py, downstream_{gas,gait}_classify.py,
   md_k_sensitivity.py, determinism_check.py
                          paper analyses (see scripts/ANALYSIS_RUNNERS.md)
@@ -77,9 +81,8 @@ scripts/
                           CSDI / PSW-I runners (see baselines/README.md)
 configs/                 one JSON per reported paper cell (see configs/README.md)
 data/
-  processed/              12 of the paper's evaluation domains, ready to use (data/DATA.md)
+  processed/              10 of the paper's twelve reported domains, ready to use
   DATA.md                 provenance + restricted-domain acquisition routes
-  dataset rebuild scripts (process_newds, fetch_pulsedb, build_swiss_trajectory, …)
 tests/                   smoke + config + shipped-data sanity tests
 results/                 expected metrics for reproduction spot checks
 REPRODUCE.md             reproduction guide (checkpoints, masks, determinism)
