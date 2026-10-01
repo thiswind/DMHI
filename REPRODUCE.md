@@ -69,8 +69,16 @@ oversized domains (physionet2012, mimic, electricity) are handled in
 
 - **Checkpoints.** The trained "Ours" checkpoints for all released runs
   (407 MB uncompressed, 50 runs, 207 MB zip) are distributed as a release
-  archive (`dmhi-checkpoints-<version>.zip`, see GitHub *Releases*). Unpack
-  under `checkpoints/dmhi/` and evaluate without retraining:
+  archive (`dmhi-checkpoints-<version>.zip`, see GitHub *Releases*). The zip
+  stores the run directories flat (`<domain>_seed<N>/`), so unpack it into
+  `checkpoints/dmhi/`:
+
+  ```bash
+  mkdir -p checkpoints/dmhi
+  unzip dmhi-checkpoints-v0.1.0.zip -d checkpoints/dmhi
+  ```
+
+  Then evaluate without retraining:
 
   ```bash
   python scripts/evaluate.py --run_dir checkpoints/dmhi/hydraulic_seed7 \
