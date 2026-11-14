@@ -132,7 +132,11 @@ class RiemannianImputer:
         decoder_patience: int = 30,
         # --- Ablation flags (do not set in production) ---
         ablation_no_embed: bool = False,
-        ablation_no_metric: bool = False,
+        # IoTJ-R1 (Reviewer 3, comment 1): the deployed pipeline is pure
+        # closed-form. The learned SPD metric field is an OPT-IN research
+        # ablation (`use_learned_metric=True`); the previous release trained
+        # it by default, which contradicted the paper's training-free claim.
+        use_learned_metric: bool = False,
         ablation_use_decoder: bool = False,
         ablation_no_mask_dist: bool = False,
         ablation_no_window_knn: bool = False,
@@ -219,7 +223,11 @@ class RiemannianImputer:
         self.decoder_patience = decoder_patience
 
         self.ablation_no_embed = ablation_no_embed
-        self.ablation_no_metric = ablation_no_metric
+        # IoTJ-R1: default deployment is training-free (Reviewer 3, comment 1).
+        # `ablation_no_metric` is a derived alias kept for backward
+        # compatibility with old configs; `use_learned_metric=True` opts in
+        # to the research-stage learned metric field (off by default).
+        self.ablation_no_metric = not use_learned_metric
         self.ablation_use_decoder = ablation_use_decoder
         self.ablation_no_mask_dist = ablation_no_mask_dist
         self.ablation_no_window_knn = ablation_no_window_knn
