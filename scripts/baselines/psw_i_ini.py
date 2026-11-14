@@ -128,9 +128,21 @@ class OTImputationIni(TransformerMixin):
         if self.initializer is not None:
             imps = self.initializer.fit_transform(train)
 
-            while np.any(np.isnan(imps)):
+            # MODIFIED (protection only): the official unbounded while-loop
+            # propagates exponential-window means one window per iteration;
+            # on heavily-missing matrices (physionet @ rho=0.9) it needs
+            # >1000 iterations. Cap it and fill the residue (long all-NaN
+            # stretches with no local information) with column means.
+            _guard = 0
+            while np.any(np.isnan(imps)) and _guard < 1000:
                 temp_mask = np.isnan(imps)
                 imps[temp_mask] = self.initializer.fit_transform(imps)[temp_mask]
+                _guard += 1
+            if np.any(np.isnan(imps)):
+                col_mean = np.nanmean(imps, axis=0)
+                imps = np.where(np.isnan(imps),
+                                np.where(np.isnan(col_mean), 0.0, col_mean),
+                                imps)
             imps = imps
             imps = torch.tensor(imps).double().to(DEVICE)
             imps = (self.noise * torch.randn(mask.shape, device=DEVICE).double() + imps)[mask]

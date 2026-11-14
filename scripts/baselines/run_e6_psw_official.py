@@ -91,14 +91,34 @@ def run_one(dataset: str, seed: int) -> dict:
     X_2d_scaled = (X_2d - mu) / sd  # NaN-safe arithmetic; observed entries exact
     X_all_scaled = (X_all_2d - mu) / sd
 
+    # Some datasets have channels with NO observed entry left after
+    # (original missingness + block mask at rho=0.9). The official MVA
+    # initializer loops forever on all-NaN columns (seen: physionet2012
+    # stuck 4h). Drop such columns before fitting; fill them back with
+    # the training-split mean afterwards (they are unlearnable by ANY
+    # method, and the eval_mask never requires them: apply_block_missing
+    # only hides observed positions).
+    keep = np.flatnonzero(np.isfinite(X_2d_scaled).any(axis=0))
+    dropped = D - len(keep)
+    X_train_full, M_train_full, _ = load_dataset(dataset, "train")
+    col_fill = np.array([X_train_full[:, :, d][M_train_full[:, :, d] == 1].mean()
+                         if (M_train_full[:, :, d] == 1).any() else 0.0
+                         for d in range(D)], dtype=np.float64)
+    X_fit = X_2d_scaled[:, keep]
+    X_all_fit = X_all_scaled[:, keep]
+
     model = official_model()
     t0 = time.time()
-    X_hat_scaled, mae_off, mse_off, mre_off = model.fit_transform(
-        X_2d_scaled.copy(), X_all_scaled)
+    X_hat_fit, mae_off, mse_off, mre_off = model.fit_transform(
+        X_fit.copy(), X_all_fit)
     train_min = (time.time() - t0) / 60
 
-    # Inverse-transform and score under the paper protocol.
-    X_hat_2d = X_hat_scaled * sd + mu
+    # Inverse-transform; reassemble dropped columns with the train-mean fill.
+    X_hat_2d = np.empty((N * T, D), dtype=np.float64)
+    X_hat_2d[:, keep] = X_hat_fit * sd[keep] + mu[keep]
+    if keep.size < D:
+        gone = np.setdiff1d(np.arange(D), keep)
+        X_hat_2d[:, gone] = col_fill[gone]
     X_hat = X_hat_2d.reshape(N, T, D).astype(np.float32)
     metrics = compute_metrics(X_hat, X_test, eval_mask)
     metrics["mse"] = metrics["rmse"] ** 2  # common.py omits mse; derive from rmse
@@ -112,6 +132,7 @@ def run_one(dataset: str, seed: int) -> dict:
         "method": "psw_i_ini_official", "dataset": dataset,
         "missing_rate": RATE, "missing_pattern": PATTERN, "seed": seed,
         "train_min": round(train_min, 2),
+        "dropped_allnan_cols": int(dropped),
         "paper_mae": metrics["mae"], "paper_mse": metrics["mse"],
         "paper_rmse": metrics["rmse"], "paper_mre": metrics["mre"],
         "official_scaled_mae": float(mae_off),
