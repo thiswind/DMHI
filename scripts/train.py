@@ -54,6 +54,8 @@ def parse_args():
                    help="Block length (used only when --pattern block)")
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--out_dir", default="checkpoints/dmhi")
+    p.add_argument("--run_suffix", default="",
+                   help="optional suffix appended to run_id (E4 sweep configs)")
     # Model hyperparameters — defaults follow the deployed configuration.
     p.add_argument("--d", type=int, default=0,
                    help="latent chart dimension; 0 -> min(12, D-2)")
@@ -70,6 +72,8 @@ def parse_args():
     p.add_argument("--stage2_method", default="mhb", choices=["mhb", "karcher"],
                    help="'mhb' = paper default (soft graph-spline); "
                         "'karcher' = ablation operator")
+    p.add_argument("--spline_gamma", type=float, default=0.02,
+                   help="Stage II soft-spline Tikhonov weight (E4 sweep knob)")
     p.add_argument("--deterministic", action="store_true",
                    help="strict determinism: torch deterministic algorithms, "
                         "single thread, deterministic cudnn. Slower (2-4x).")
@@ -127,13 +131,15 @@ def main():
         batch_size=args.batch_size,
         patience=args.patience,
         stage2_method=args.stage2_method,
+        mhb_params={"mode": "soft", "spline_gamma": args.spline_gamma,
+                    "k_latent": 10, "K": 5, "gamma": 1e-3},
     )
 
     t0 = time.time()
     imputer.fit(X_train, M_train, X_val, M_val)
     train_min = (time.time() - t0) / 60.0
 
-    run_id = f"{args.dataset}_seed{args.seed}"
+    run_id = f"{args.dataset}_seed{args.seed}" + (f"_{args.run_suffix}" if args.run_suffix else "")
     out_dir = pathlib.Path(args.out_dir) / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
     imputer.save(str(out_dir / "checkpoint.pkl"))
@@ -152,6 +158,7 @@ def main():
         "lr": args.lr,
         "lambda_F": args.lambda_F,
         "lambda_smooth": args.lambda_smooth,
+        "spline_gamma": args.spline_gamma,
         "batch_size": args.batch_size,
         "patience": args.patience,
         "train_min": round(train_min, 2),
