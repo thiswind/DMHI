@@ -41,6 +41,8 @@ d = min(12, D - 2)
 imp = RiemannianImputer(d=d, epochs=200, patience=20)
 if ARM == "nometa":
     imp.ablation_no_metric = True
+elif ARM == "default":
+    imp.use_learned_metric = True; imp.ablation_no_metric = False
 t0 = time.time(); imp.fit(X_train, M_train, X_val, M_val); fit_s = time.time() - t0
 
 # block-missing eval at rho=0.9 (paper protocol, block_size=20)
