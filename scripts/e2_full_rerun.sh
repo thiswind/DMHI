@@ -4,6 +4,12 @@
 # evaluate.py always writes run_dir/metrics.json (overwrite), so we archive it
 # after each evaluation into runs/e2_closed_form/<run>_r<rate>/.
 set -uo pipefail
+# Server has many cores; the prebuilt OpenBLAS in riemann_baselines segfaults
+# when its compile-time NUM_THREADS cap is exceeded (seen on physionet2012
+# evals: "precompiled NUM_THREADS exceeded" then SIGSEGV). Cap threads.
+export OPENBLAS_NUM_THREADS=32
+export OMP_NUM_THREADS=32
+export MKL_NUM_THREADS=32
 PY=~/miniconda3/envs/riemann_baselines/bin/python
 OUTBASE="runs/e2_closed_form"
 mkdir -p "$OUTBASE"
