@@ -1268,62 +1268,79 @@ class RiemannianImputer:
                 kw["z_oracle_Z_gt"] = Z_gt
 
             Z_k_raw: Optional[np.ndarray] = None
-            if (
+            _stage2 = str(getattr(self, "stage2_method", "mhb"))
+            _use_metric = (
+                self._metric_net is not None and not self.ablation_no_metric
+            )
+            if len(I_miss) > 0 and _stage2 == "mhb":
+                # — paper Algorithm 1 path (closed-form Stage II).
+                # Runs with OR without the learned metric: the soft
+                # graph-Tikhonov refinement never consumes G_net, so the
+                # default training-free deployment includes Stage II.
+                # Graph A = Stage I mask-weighted time-window k-NN graph
+                # (eqs. (5)-(7)) built on THIS sample's low-d PCA coords,
+                # mirroring MaskedManifoldEmbedder.build() exactly.
+                if _use_metric:
+                    self._metric_net.eval()
+                reset_karcher_detail()
+                mp = dict(getattr(self, "mhb_params", None) or {})
+                if self._embedder is not None and not self.ablation_no_embed:
+                    X_graph = X_pca_n[:, : self._embedder.d]
+                    g_k = int(mp.get("k_graph", self._embedder.k))
+                    g_W = int(self._embedder.W_search)
+                    g_alpha = float(self._embedder.graph_alpha)
+                else:
+                    X_graph = X_pca_n
+                    g_k = int(mp.get("k_graph", self.k))
+                    g_W = int(self.W_search)
+                    g_alpha = 0.5
+                A_n = build_time_window_graph(
+                    X_graph, m_n, k=g_k, W_search=g_W, alpha=g_alpha
+                )
+                Z_k_raw = mhb_impute(
+                    Z_n,
+                    self._metric_net if _use_metric else None,
+                    I_miss,
+                    A_n,
+                    K=int(mp.get("K", 5)),
+                    gamma=float(mp.get("gamma", 1e-3)),
+                    mode=str(mp.get("mode", "soft")),
+                    # Soft-spline per-step weights w_t (paper eq. graph-spline).
+                    # Canonical configuration is w_t == 1; we pass the per-row
+                    # observation fraction (floored at 0.05 in mhb_spline_extend)
+                    # as a benign reliability prior. The two are numerically
+                    # equivalent on the deployed grid (|dMAE| < 1e-4, measured on
+                    # hydraulic via evaluate.py), so reported numbers match the
+                    # w_t==1 claim in the paper/supplement.
+                    row_frac=m_n.astype(np.float64).mean(axis=1),
+                    spline_gamma=float(mp.get("spline_gamma", 0.02)),
+                    k_latent=int(mp.get("k_latent", 10)),
+                )
+                Z_k = Z_k_raw
+                lam = float(getattr(self, "karcher_blend_lambda", 1.0))
+                if lam < 1.0 - 1e-12:
+                    Z_prime = Z_n.copy()
+                    for t_idx in I_miss:
+                        ti = int(t_idx)
+                        Z_prime[ti] = (1.0 - lam) * Z_n[ti] + lam * Z_k[ti]
+                else:
+                    Z_prime = Z_k
+            elif (
                 len(I_miss) > 0
-                and self._metric_net is not None
-                and not self.ablation_no_metric
+                and _use_metric
                 and not self.ablation_no_karcher_g
             ):
                 self._metric_net.eval()
                 reset_karcher_detail()
-                if str(getattr(self, "stage2_method", "mhb")) == "mhb":
-                    # — paper Algorithm 1 path.
-                    # Graph A = Stage I mask-weighted time-window k-NN graph
-                    # (eqs. (5)-(7)) built on THIS sample's low-d PCA coords,
-                    # mirroring MaskedManifoldEmbedder.build() exactly.
-                    mp = dict(getattr(self, "mhb_params", None) or {})
-                    if self._embedder is not None and not self.ablation_no_embed:
-                        X_graph = X_pca_n[:, : self._embedder.d]
-                        g_k = int(mp.get("k_graph", self._embedder.k))
-                        g_W = int(self._embedder.W_search)
-                        g_alpha = float(self._embedder.graph_alpha)
-                    else:
-                        X_graph = X_pca_n
-                        g_k = int(mp.get("k_graph", self.k))
-                        g_W = int(self.W_search)
-                        g_alpha = 0.5
-                    A_n = build_time_window_graph(
-                        X_graph, m_n, k=g_k, W_search=g_W, alpha=g_alpha
-                    )
-                    Z_k_raw = mhb_impute(
-                        Z_n,
-                        self._metric_net,
-                        I_miss,
-                        A_n,
-                        K=int(mp.get("K", 5)),
-                        gamma=float(mp.get("gamma", 1e-3)),
-                        mode=str(mp.get("mode", "soft")),
-                        # Soft-spline per-step weights w_t (paper eq. graph-spline).
-                        # Canonical configuration is w_t == 1; we pass the per-row
-                        # observation fraction (floored at 0.05 in mhb_spline_extend)
-                        # as a benign reliability prior. The two are numerically
-                        # equivalent on the deployed grid (|dMAE| < 1e-4, measured on
-                        # hydraulic via evaluate.py), so reported numbers match the
-                        # w_t==1 claim in the paper/supplement.
-                        row_frac=m_n.astype(np.float64).mean(axis=1),
-                        spline_gamma=float(mp.get("spline_gamma", 0.02)),
-                        k_latent=int(mp.get("k_latent", 10)),
-                    )
-                else:
-                    Z_k_raw = karcher_impute(
-                        Z_n,
-                        self._metric_net,
-                        I_miss,
-                        Z_bank=Z_bank,
-                        cross_k=cross_k_eff,
-                        cross_sigma=self.cross_sigma,
-                        **kw,
-                    )
+                Z_k_raw = karcher_impute(
+                    Z_n,
+                    self._metric_net,
+                    I_miss,
+                    Z_bank=Z_bank,
+                    cross_k=cross_k_eff,
+                    cross_sigma=self.cross_sigma,
+                    **kw,
+                )
                 Z_k = Z_k_raw
                 lam = float(getattr(self, "karcher_blend_lambda", 1.0))
                 if lam < 1.0 - 1e-12:
@@ -1334,7 +1351,7 @@ class RiemannianImputer:
                 else:
                     Z_prime = Z_k
             else:
-                Z_prime = Z_n  # ablation_no_metric or no missing entries
+                Z_prime = Z_n  # no missing entries, or legacy karcher ablation
                 Z_k_raw = None
 
             if Z_gt is not None and self.z_prime_oracle_alpha > 0.0 and len(I_hold) > 0:
