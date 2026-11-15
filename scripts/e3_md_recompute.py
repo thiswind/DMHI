@@ -46,9 +46,10 @@ PATTERN = "block20"
 SEEDS = [7, 42, 123]
 K = 5
 
-E2_DIR = pathlib.Path("runs/e2_closed_form")
+import os
+E2_DIR = pathlib.Path(os.environ.get("E3_E2_DIR", "runs/e2_closed_form"))
 E6_DIR = pathlib.Path("runs/e6_psw_official")
-OUT_DIR = pathlib.Path("runs/e3_md")
+OUT_DIR = pathlib.Path(os.environ.get("E3_OUT_DIR", "runs/e3_md"))
 
 
 def md_row(X_hat, X_test, eval_mask):
