@@ -43,7 +43,7 @@ if ARM == "nometa":
     imp.ablation_no_metric = True
 elif ARM == "default":
     imp.use_learned_metric = True; imp.ablation_no_metric = False
-t0 = time.time(); imp.fit(X_train, M_train, X_val, M_val); fit_s = time.time() - t0
+t0 = time.time(); imp.build(X_train, M_train, X_val, M_val); fit_s = time.time() - t0
 
 # block-missing eval at rho=0.9 (paper protocol, block_size=20)
 M_eval_test = apply_block_missing(M_test, 20, 0.9, seed=SEED)

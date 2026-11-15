@@ -1,6 +1,8 @@
 """End-to-end Riemannian Geodesic Imputation pipeline.
 
-RiemannianImputer.fit(X_train, M_train, X_val, M_val) → trains Stage I + II.
+RiemannianImputer.build(X_train, M_train, X_val, M_val) → constructs Stage I
++ II (closed-form structures; no training in the default deployment path,
+where ``use_learned_metric=False``).
 RiemannianImputer.impute(X, M) → runs Stage I + II + III and returns hat_X.
 
 Device priority: MPS → CUDA → CPU.
@@ -321,17 +323,23 @@ class RiemannianImputer:
         )
 
     # ------------------------------------------------------------------
-    # Fit
+    # Build (closed-form construction; no training in the default path)
     # ------------------------------------------------------------------
 
-    def fit(
+    def build(
         self,
         X_train: np.ndarray,
         M_train: np.ndarray,
         X_val: Optional[np.ndarray] = None,
         M_val: Optional[np.ndarray] = None,
     ) -> "RiemannianImputer":
-        """Train Stage I and Stage II on a dataset.
+        """Construct Stage I and Stage II on a dataset.
+
+        In the default deployment path (``use_learned_metric=False``) this
+        only computes closed-form structures (Stage I manifold chart, Stage II
+        soft graph-Tikhonov operator); no neural network is trained. The
+        learned-metric stage remains available as an opt-in ablation via
+        ``use_learned_metric=True``.
 
         Args:
             X_train: (N, T, D) float32 training samples.
@@ -358,7 +366,7 @@ class RiemannianImputer:
         X_ref = X_train[top_k_idx].mean(axis=0)      # (T, D) average
         M_ref = (M_train[top_k_idx].sum(axis=0) > 0).astype(np.int8)  # union mask
 
-        logger.info("Fitting Stage I (manifold embedder)...")
+        logger.info("Building Stage I (manifold embedder)...")
         if self.ablation_no_embed:
             # Ablation: skip manifold embedding, use raw sklearn PCA only
             from sklearn.decomposition import PCA as _PCA
@@ -387,7 +395,7 @@ class RiemannianImputer:
                 d_pca=self.d_pca,
                 hold_blend_alpha=self.hold_blend_alpha,
             )
-            embedder.fit(X_ref, M_ref)
+            embedder.build(X_ref, M_ref)
             self._embedder = embedder
         if not self.ablation_no_embed:
             # Sync actual d (embedder may reduce d if n_L was too small)
@@ -1272,7 +1280,7 @@ class RiemannianImputer:
                     # — paper Algorithm 1 path.
                     # Graph A = Stage I mask-weighted time-window k-NN graph
                     # (eqs. (5)-(7)) built on THIS sample's low-d PCA coords,
-                    # mirroring MaskedManifoldEmbedder.fit() exactly.
+                    # mirroring MaskedManifoldEmbedder.build() exactly.
                     mp = dict(getattr(self, "mhb_params", None) or {})
                     if self._embedder is not None and not self.ablation_no_embed:
                         X_graph = X_pca_n[:, : self._embedder.d]

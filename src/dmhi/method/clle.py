@@ -51,9 +51,9 @@ def clle_inverse(
     Args:
         Z_prime: (T, d) updated latent codes after Karcher imputation.
         id_L: (n_L,) landmark time indices.
-        clle_weights: {t: (global_nn_ids, weights)} from embedder.fit().
+        clle_weights: {t: (global_nn_ids, weights)} from embedder.build().
             nn_ids are global time indices into id_L.
-        X_pca: (T, d_pca) original PCA-projected data from fit().
+        X_pca: (T, d_pca) original PCA-projected data from build().
         V: (D, d_pca) PCA loading matrix.
         mu: (D,) PCA mean.
         X_obs: (T, D) original observed data (may have NaN for missing).

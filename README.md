@@ -23,7 +23,7 @@ or `pip install -r requirements.txt`.
 
     python tests/test_smoke.py
 
-Fits a small `RiemannianImputer` on the bundled synthetic sample and checks
+Builds a small `RiemannianImputer` on the bundled synthetic sample and checks
 finiteness and observed-entry preservation. Runs in seconds.
 
 ## Evaluate a checkpoint

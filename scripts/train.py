@@ -136,7 +136,7 @@ def main():
     )
 
     t0 = time.time()
-    imputer.fit(X_train, M_train, X_val, M_val)
+    imputer.build(X_train, M_train, X_val, M_val)
     train_min = (time.time() - t0) / 60.0
 
     run_id = f"{args.dataset}_seed{args.seed}" + (f"_{args.run_suffix}" if args.run_suffix else "")

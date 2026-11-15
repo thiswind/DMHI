@@ -182,7 +182,7 @@ def _grad_norm(Z_L: np.ndarray, lam: float) -> np.ndarray:
 class MaskedManifoldEmbedder:
     """Fit a d-dim manifold chart on (T, D) time series with mask M.
 
-    After fit(), stores:
+    After build(), stores:
         V, mu         — PCA loading and mean
         id_L          — landmark time indices
         Z             — (T, d) full embedding (landmarks + CLLE lifts)
@@ -208,7 +208,7 @@ class MaskedManifoldEmbedder:
     ):
         self.d = d
         # d_pca: PCA components for CLLE inverse quality.
-        # If None, defaults to D-1 (see fit()).
+        # If None, defaults to D-1 (see build()).
         # Setting d_pca > d improves CLLE inverse quality (less info loss).
         self.d_pca = d_pca
         self.hold_blend_alpha = float(hold_blend_alpha)
@@ -234,8 +234,8 @@ class MaskedManifoldEmbedder:
 
     # ------------------------------------------------------------------
 
-    def fit(self, X: np.ndarray, M: np.ndarray) -> "MaskedManifoldEmbedder":
-        """Fit the manifold chart.
+    def build(self, X: np.ndarray, M: np.ndarray) -> "MaskedManifoldEmbedder":
+        """Build the manifold chart (closed-form: PCA + graph + eigensolver).
 
         Args:
             X: (T, D) float32 time series (may contain NaN for missing).
@@ -382,7 +382,7 @@ class MaskedManifoldEmbedder:
 
         NaN entries are filled by column mean before projection.
         """
-        assert self.V is not None, "Call fit() first."
+        assert self.V is not None, "Call build() first."
         X_filled = _mean_fill_nan(X.astype(np.float32))
         Xc = (X_filled - self.mu).astype(np.float64)
         return (Xc @ self.V.astype(np.float64)).astype(np.float32)
@@ -395,7 +395,7 @@ class MaskedManifoldEmbedder:
     ) -> tuple:
         """Lift a new (T, D) sample onto the fitted chart via CLLE.
 
-        Reuses V, mu from fit(). Non-landmarks are lifted to nearest fitted
+        Reuses V, mu from build(). Non-landmarks are lifted to nearest built
         landmarks in X_pca space using simplex weights.
 
         Args:
@@ -406,7 +406,7 @@ class MaskedManifoldEmbedder:
             Z_new: (T, d) float32 embedding.
             X_pca: (T, d_pca) float32 PCA projection of this sample.
         """
-        assert self.V is not None, "Call fit() first."
+        assert self.V is not None, "Call build() first."
         T = X.shape[0]
         X_pca = self.pca_project(X)          # (T, d_pca) — full PCA for CLLE inverse
         X_pca_low = X_pca[:, :self.d]        # (T, d) — low-dim for neighbor search
