@@ -21,7 +21,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-RUNS = "runs/e4_sensitivity"
+RUNS = os.environ.get("E4_RUNS", "runs/e4_stage2_fixed")  # post-gate-fix re-eval
 OUT_DIR = "results"
 DATASETS = ["mocap_karate", "delta_robot", "physionet2012"]
 DS_LABEL = {
@@ -125,7 +125,7 @@ def main():
         print(f"[fig] {fig_path}  ({param}: "
               + ", ".join(f"{ds} {len(per_ds[ds])}pts" for ds in DATASETS) + ")")
 
-    json_path = os.path.join(OUT_DIR, "e4_sensitivity_curves.json")
+    json_path = os.path.join(OUT_DIR, f"e4_sensitivity_curves_{os.path.basename(RUNS.rstrip('/'))}.json")
     with open(json_path, "w") as f:
         json.dump(all_data, f, indent=1)
     print(f"[json] {json_path}")
