@@ -118,7 +118,8 @@ def main():
                         "mask_seed = seed + 2 (shared with baselines). "
                         "Default: seed + 2.")
     p.add_argument("--deterministic", action="store_true",
-                   help="Enable strict determinism for inference (mirrors train.py).")
+                   help="Enable strict determinism for inference "
+                        "(mirrors build_checkpoint.py).")
     args = p.parse_args()
 
     set_seed(args.seed, deterministic=args.deterministic)
@@ -130,7 +131,7 @@ def main():
     dataset = cfg["dataset"]
     missing_rate = args.rate if args.rate is not None else cfg["missing_rate"]
     pattern = cfg["pattern"]
-    train_min = cfg.get("train_min", None)
+    train_min = cfg.get("build_min", cfg.get("train_min", None))
     run_seed = int(cfg.get("seed", args.seed))
     block_size = args.block_size if args.block_size is not None else cfg.get("block_size", 20)
     mask_seed = args.mask_seed if args.mask_seed is not None else run_seed + 2
@@ -186,7 +187,7 @@ def main():
         "MD": round(md_mean, 6),
         "n_obs_dims": int(len(_observed_dims(M_test))),
         "mask_seed": int(mask_seed),
-        "train_min": round(train_min, 2) if train_min is not None else None,
+        "build_min": round(train_min, 2) if train_min is not None else None,
         "infer_ms_per_sample": round(elapsed_ms, 3),
         "deterministic_train": bool(cfg.get("deterministic", False)),
         "deterministic_eval": bool(args.deterministic),

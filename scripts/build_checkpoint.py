@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Fit DMHI (RiemannianImputer) on a processed dataset and save a checkpoint.
+"""Build a DMHI (RiemannianImputer) checkpoint on a processed dataset.
 
-Note: the paper's deployed form is training-free (zero trained parameters);
-this entry point regenerates the checkpoint artifacts (Stage I embedding +
-Stage II metric refinement) for research reproducibility. This is the
-fitting entry point behind the paper's "Ours" checkpoints. The
-deployed configuration (see configs/ and REPRODUCE.md) corresponds to the
-defaults used here: d = min(12, D-2) unless overridden, k=10, k_clle=9,
-r_L=0.30, lambda_F=1e-5, epochs=200 (Stage I and Stage II), patience=20,
-Stage II operator = soft graph-spline (mhb).
+The deployed form is training-free (zero trained parameters): this entry
+point deterministically regenerates the closed-form checkpoint artifacts
+(Stage I manifold chart + Stage II graph-Tikhonov operator) in seconds on a
+laptop CPU. The deployed configuration (see configs/ and REPRODUCE.md)
+corresponds to the defaults used here: d = min(12, D-2) unless overridden,
+k=10, k_clle=9, r_L=0.30, lambda_F=1e-5, patience=20, Stage II operator =
+soft graph-spline (mhb). (The learned-metric ablation, `use_learned_metric`,
+is opt-in only and requires torch; the paper's numbers never use it.)
 
 Data convention (produced by scripts/process_newds.py or fetched per
 data/DATA.md):
@@ -20,7 +20,7 @@ Datasets without native masks (e.g. cmapss) are treated as fully observed,
 which matches how their baselines were generated.
 
 Usage:
-    python scripts/train.py --dataset gas_home --seed 7 \
+    python scripts/build_checkpoint.py --dataset gas_home --seed 7 \
         --out_dir checkpoints/dmhi
 
     python scripts/evaluate.py --run_dir checkpoints/dmhi/gas_home_seed7 \
@@ -124,7 +124,7 @@ def main():
 
     N, T, D = X_train.shape
     d = args.d if args.d > 0 else min(12, D - 2)
-    print(f"[train] {args.dataset} train={X_train.shape} val={X_val.shape} "
+    print(f"[build] {args.dataset} train={X_train.shape} val={X_val.shape} "
           f"d={d} obs_frac={M_train.mean():.3f}", flush=True)
 
     imputer = RiemannianImputer(
@@ -146,13 +146,13 @@ def main():
 
     t0 = time.time()
     imputer.build(X_train, M_train, X_val, M_val)
-    train_min = (time.time() - t0) / 60.0
+    build_min = (time.time() - t0) / 60.0
 
     run_id = f"{args.dataset}_seed{args.seed}" + (f"_{args.run_suffix}" if args.run_suffix else "")
     out_dir = pathlib.Path(args.out_dir) / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
     imputer.save(str(out_dir / "checkpoint.pkl"))
-    print(f"[train] checkpoint saved: {out_dir / 'checkpoint.pkl'}")
+    print(f"[build] checkpoint saved: {out_dir / 'checkpoint.pkl'}")
 
     config = {
         "dataset": args.dataset,
@@ -170,14 +170,14 @@ def main():
         "spline_gamma": args.spline_gamma,
         "batch_size": args.batch_size,
         "patience": args.patience,
-        "train_min": round(train_min, 2),
+        "build_min": round(build_min, 2),
         "run_id": run_id,
         "deterministic": bool(args.deterministic),
     }
     with open(out_dir / "config.json", "w") as f:
         json.dump(config, f, indent=2)
 
-    print(f"[train] done. run_id={run_id}  train_min={train_min:.1f}")
+    print(f"[build] done. run_id={run_id}  build_min={build_min:.1f}")
     print(str(out_dir))
 
 

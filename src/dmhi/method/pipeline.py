@@ -522,7 +522,8 @@ class RiemannianImputer:
             best_val_loss = None
             no_improve = 0
 
-        logger.info(f"Training Stage II for up to {self.epochs} epochs...")
+        logger.info(f"Stage II closed-form refinement ready (up to {self.epochs} "
+                    "iteration cap; no optimizer step runs in the default path).")
         epoch_iter = (
             _tqdm(range(self.epochs), desc="Stage II", unit="ep", dynamic_ncols=True)
             if _HAS_TQDM else range(self.epochs)

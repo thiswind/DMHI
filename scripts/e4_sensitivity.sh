@@ -20,10 +20,10 @@ run_one () {  # $1=tag $2...=extra train args
   for SEED in 7 42 123; do
     local DEST="${OUT}/${TAG}_seed${SEED}"
     if [ -f "${DEST}/metrics.json" ]; then continue; fi
-    # train.py run_id format: {dataset}_seed{seed}_{suffix}
+    # build_checkpoint.py run_id format: {dataset}_seed{seed}_{suffix}
     local CKPT="checkpoints/e4/${DS}_seed${SEED}_${TAG}_seed${SEED}"
     if [ ! -f "${CKPT}/config.json" ]; then
-      $PY scripts/train.py --dataset "$DS" --seed "$SEED" --out_dir "checkpoints/e4" \
+      $PY scripts/build_checkpoint.py --dataset "$DS" --seed "$SEED" --out_dir "checkpoints/e4" \
         --run_suffix "${TAG}_seed${SEED}" "$@" \
         || { echo "[FAIL train] ${DS} ${TAG} seed${SEED}"; continue; }
     fi

@@ -13,7 +13,7 @@
   "lambda_smooth": 0.0001,
   "batch_size": 64,
   "patience": 20,
-  "train_min": 3.06,
+  "build_min": 3.06,
   "run_id": "physionet2012_blockbs20_70_seed7",
   "deterministic": true
 }

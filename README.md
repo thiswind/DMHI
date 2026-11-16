@@ -54,7 +54,7 @@ a single domain.
 ## Layout
 
     src/dmhi/method/   the pipeline (importable package)
-    scripts/           train / evaluate / benchmark / data / analysis scripts
+    scripts/           build_checkpoint / evaluate / benchmark / data / analysis
     configs/           one JSON per reported paper cell
     data/processed/    10 of the 12 paper domains (see data/DATA.md)
     tests/             smoke, config, and data sanity tests

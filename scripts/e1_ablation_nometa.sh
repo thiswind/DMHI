@@ -22,7 +22,7 @@ for DS in "${DATASETS[@]}"; do
 import sys, pathlib, json, time
 import numpy as np
 sys.path.insert(0, "src")
-sys.argv = ["train.py"]
+sys.argv = ["build_checkpoint.py"]
 from dmhi.method.pipeline import RiemannianImputer
 from dmhi.utils.eval_protocol import apply_block_missing, manifold_deviation
 

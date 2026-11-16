@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # E4b: latent-dimension sensitivity sweep (4th hyperparameter, meeting 2026-11-15).
 # Companion to e4_sensitivity.sh (gamma_s / r_L / k already done there).
-# Grid per dataset, clipped to d <= D-2 (train.py auto rule: min(12, D-2)),
+# Grid per dataset, clipped to d <= D-2 (build_checkpoint.py auto rule: min(12, D-2)),
 # default point always included:
 #   delta_robot    D=6  -> {2,3,4}    (default 4)
 #   physionet2012  D=10 -> {2,4,8}    (default 8)
@@ -27,7 +27,7 @@ run_one () {  # $1=tag $2...=extra train args
     if [ -f "${DEST}/metrics.json" ]; then continue; fi
     local CKPT="checkpoints/e4/${DS}_seed${SEED}_${TAG}_seed${SEED}"
     if [ ! -f "${CKPT}/config.json" ]; then
-      $PY scripts/train.py --dataset "$DS" --seed "$SEED" --out_dir "checkpoints/e4" \
+      $PY scripts/build_checkpoint.py --dataset "$DS" --seed "$SEED" --out_dir "checkpoints/e4" \
         --run_suffix "${TAG}_seed${SEED}" "$@" \
         || { echo "[FAIL train] ${DS} ${TAG} seed${SEED}"; continue; }
     fi

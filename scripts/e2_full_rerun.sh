@@ -25,7 +25,7 @@ for DS in "${DATASETS[@]}"; do
     fi
     if [ ! -f "$CKPT/config.json" ]; then
       echo "[fit ] $RUN"
-      $PY scripts/train.py --dataset "$DS" --seed "$SEED" --out_dir checkpoints/e2 || { echo "[FAIL fit] $RUN"; continue; }
+      $PY scripts/build_checkpoint.py --dataset "$DS" --seed "$SEED" --out_dir checkpoints/e2 || { echo "[FAIL build] $RUN"; continue; }
     fi
     for RATE in 0.5 0.7 0.9; do
       DEST="$OUTBASE/${RUN}_r${RATE}"

@@ -18,15 +18,14 @@ NumPy/SciPy closed form.
 
 **Ten of the paper's twelve reported domains ship inside this repository**
 under `data/processed/` (see `data/DATA.md`) — nothing to download. DMHI is
-**training-free**: despite the historical script name, `train.py` runs no
-gradient training in the default configuration — it deterministically
-regenerates the checkpoint's closed-form structures (Stage I manifold chart +
-Stage II graph-Tikhonov operator) in seconds on a laptop CPU, then
-`evaluate.py` applies the paper protocol (block missingness, length 20,
-deterministic):
+**training-free**: `scripts/build_checkpoint.py` runs no gradient training
+in the default configuration — it deterministically regenerates the
+checkpoint's closed-form structures (Stage I manifold chart + Stage II
+graph-Tikhonov operator) in seconds on a laptop CPU, then `evaluate.py`
+applies the paper protocol (block missingness, length 20, deterministic):
 
 ```bash
-python scripts/train.py --dataset gas_home --seed 7 \
+python scripts/build_checkpoint.py --dataset gas_home --seed 7 \
     --out_dir checkpoints/local
 
 python scripts/evaluate.py --run_dir checkpoints/local/gas_home_seed7 \
@@ -57,7 +56,8 @@ claims must not be conflated:
    Apple M4 vs Linux/OpenBLAS agrees to ~3e-4 in every metric (six-decimal
    reproduction within one environment). No GPU is needed at inference.
 2. *Checkpoint construction is deterministic per platform but sensitive to
-   the LAPACK backend.* Re-running `train.py` twice on the same machine
+   the LAPACK backend.* Re-running `build_checkpoint.py` twice on the same
+   machine
    reproduces all six printed decimals (verified on both an Apple M4 and a
    Linux server). Across machines, Stage I's spectral decomposition (PCA +
    Laplacian eigenproblem) picks different bases inside near-degenerate
@@ -71,7 +71,7 @@ released checkpoints (Level 2), or rebuild on Linux/OpenBLAS.
 
 To target a specific reported cell, take its hyperparameters from
 `configs/<domain>_seed<N>.json` (see `configs/README.md`) and pass them to
-`train.py` (they map 1:1 to CLI flags). The three DUA-restricted /
+`build_checkpoint.py` (they map 1:1 to CLI flags). The three DUA-restricted /
 oversized domains (physionet2012, mimic, electricity) are handled in
 `data/DATA.md` § "Domains not in the repository".
 
@@ -125,8 +125,8 @@ oversized domains (physionet2012, mimic, electricity) are handled in
 - **Training-free by construction:** the default `build()` computes
   closed-form structures only (no optimizer, no epochs of gradient descent,
   no learned weights); `use_learned_metric=True` exists solely as an opt-in
-  ablation and requires torch. `RiemannianImputer.fit()` does not exist —
-  the API is `build()` / `impute()`.
+  ablation and requires torch. The public API is `build()` / `impute()` —
+  there is no `fit()` and no training entry point.
 - **Same-mask discipline:** for each cell every method derives the block mask
   from the same `(domain, block_size, seed)` arithmetic, so masks are
   byte-identical across methods. Mask-draw variability is about `1e-3` MAE,
