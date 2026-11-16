@@ -58,7 +58,7 @@ def _env_flag(name: str) -> bool:
 
 
 def get_device() -> "torch.device":
-    """Return MPS > CUDA > CPU (torch-only; import inside)."""
+    """Return MPS > CUDA > CPU (torch-only; imports torch inside)."""
     import torch
 
     if torch.backends.mps.is_available():
@@ -66,6 +66,14 @@ def get_device() -> "torch.device":
     elif torch.cuda.is_available():
         return torch.device("cuda")
     return torch.device("cpu")
+
+
+def _torch_available() -> bool:
+    try:
+        import torch  # noqa: F401
+        return True
+    except ImportError:
+        return False
 
 
 def _decoder_mlp_factory():
@@ -319,6 +327,13 @@ class RiemannianImputer:
             return 0
         return int(self.cross_k)
 
+    def _needs_torch(self) -> bool:
+        """Whether this configuration's build/impute touches torch at all."""
+        return bool(self.ablation_use_decoder) or (
+            not self.ablation_no_metric
+            and _torch_available()
+        )
+
     def _ensure_latent_bank(self) -> None:
         """Build training latent bank for cross-subject Karcher (once per impute pass)."""
         if self._latent_bank is not None:
@@ -370,9 +385,16 @@ class RiemannianImputer:
             self
         """
         N, T, D = X_train.shape
-        device = get_device()
-        self._device = device
-        logger.info(f"Device: {device}")
+        if self.ablation_no_metric and not self._needs_torch():
+            # Torch-free deployment path (edge devices): no learned metric,
+            # no decoder → no device selection, no torch import.
+            device = None
+            self._device = None
+            logger.info("Device: cpu (torch-free closed-form path)")
+        else:
+            device = get_device()
+            self._device = device
+            logger.info(f"Device: {device}")
 
         # --- Stage I: embed a representative reference sample ---
         # Synthesise reference by averaging the top-K most-observed samples.
