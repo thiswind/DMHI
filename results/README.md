@@ -41,10 +41,14 @@ Notes:
   `newds_v2` protocol if you need the raw data; the released checkpoints
   evaluate them once the processed arrays are in place under
   `data/processed/`.
-- All 12 domains were verified to reproduce this table on x86-64
-  (OpenBLAS/numpy 2.2.6) and arm64 (Accelerate/numpy 2.2.6), and a
-  representative subset on numpy 1.26.4 without torch installed, agreeing to
-  the four decimals shown (cross-platform residuals <= 3e-4).
+- All 12 domains were re-verified on x86-64 Linux (OpenBLAS / numpy 2.2.6,
+  and again under the newest stack scipy 1.16.3 / scikit-learn 1.9.0): all
+  36 runs reproduce the four metrics **bit-for-bit**.
+- On Apple Silicon (arm64), 40 of the 48 table cells match exactly; the
+  remaining cells can differ by ±1 in the third decimal (absolute
+  difference ≤ 0.003; BLAS reduction order). No bold/underline ranking or
+  paper conclusion changes. A representative subset also runs on numpy
+  1.26.4 without torch installed (same arm64 tolerances).
 
 ### Why the third decimal can differ across machines
 
@@ -54,11 +58,14 @@ floating-point arithmetic underneath the linear algebra (CPU-architecture
 SIMD reduction order; see REPRODUCE.md). Verified on this repository:
 
 - the deployed path is device-independent (MPS vs CPU give the same result);
-- re-evaluating under a pinned environment matching the paper's stack
-  (`numpy 2.2.6 / scipy 1.15.3 / scikit-learn 1.7.2`) reproduces the
-  repository value exactly;
-- the residuals across x86-64 / arm64 / numpy-1.26 are of order 1e-4 and do
-  not change any table cell at three decimals.
+- on x86-64, re-evaluating under the paper's pinned stack
+  (`numpy 2.2.6 / scipy 1.15.3 / scikit-learn 1.7.2`) or under the newest
+  stack (`scipy 1.16.3 / scikit-learn 1.9.0`) reproduces the repository
+  value exactly;
+- across x86-64 environments the numbers are bit-identical; on arm64 the
+  largest observed residual is 2.6e-3 (MD), which can shift a printed cell
+  by ±1 in the third decimal but never changes any ranking (each affected
+  cell's gap to the runner-up method is more than 10x the drift).
 
 ## Table IV — inference speed
 
