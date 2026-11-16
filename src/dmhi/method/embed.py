@@ -290,7 +290,15 @@ class MaskedManifoldEmbedder:
         L_mat = (D_mat - W_L).astype(np.float32)  # unnormalised Laplacian
         Z_L = _le_init(W_L, d)
 
-        # --- Step 5: Nesterov gradient descent ---
+        # --- Step 5: deterministic landmark-coordinate solver (Eq. malr_embedding) ---
+        # Solves the paper's Stage-I objective tr(Z' L Z)/N - var terms + hinge
+        # temporal regularizer by projected Nesterov acceleration from the
+        # Laplacian-eigenmap initialization. Fixed schedule (epochs/LR are
+        # constructor constants), fixed init, no early stopping on data, no
+        # learned parameters: same inputs -> same outputs, bit-for-bit, on
+        # the same machine. (Cross-architecture bit differences exist and are
+        # documented in REPRODUCE.md; use released checkpoints for
+        # paper-table numbers.)
         N = n_L
         # LR scaled by 1/N for stable convergence regardless of graph size
         alpha_max = self.alpha_max_factor / max(N, 1)

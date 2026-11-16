@@ -2,6 +2,11 @@
 
 Three levels, increasing in data requirements.
 
+> **Which level reproduces the paper's table numbers?** Level 2 (released
+> checkpoints + evaluate). Level 1 rebuilding is a sanity check whose
+> numbers can shift with your CPU architecture — see the platform note
+> below before comparing anything against the tables.
+
 ## Level 0 — smoke test (no data, seconds)
 
 ```bash
