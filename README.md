@@ -6,8 +6,11 @@ Things Journal, 2026, under review).
 
 DMHI imputes block-missing multivariate time series with a three-stage
 manifold pipeline (embed → intrinsic compute → inverse project). There is
-no training phase; `build()` only stores/computes closed-form structures
-and inference uses no neural-network weights, so deployment needs only
+no training phase and no learned weights: `build()` constructs the Stage I
+manifold chart by deterministic spectral decomposition plus a fixed-schedule
+landmark refinement (fixed iteration count, no validation early-stopping),
+solves the Stage II graph-Tikhonov system in closed form, and inference
+uses no neural-network weights, so deployment needs only
 NumPy/SciPy/scikit-learn (torch is an optional dependency used solely by
 the ablation-only learned-metric paths). Entry point:
 `dmhi.method.pipeline.RiemannianImputer`.

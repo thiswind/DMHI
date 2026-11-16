@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Build a DMHI (RiemannianImputer) checkpoint on a processed dataset.
 
-The deployed form is training-free (zero trained parameters): this entry
-point deterministically regenerates the closed-form checkpoint artifacts
-(Stage I manifold chart + Stage II graph-Tikhonov operator) in seconds on a
-laptop CPU. The deployed configuration (see configs/ and REPRODUCE.md)
-corresponds to the defaults used here: d = min(12, D-2) unless overridden,
-k=10, k_clle=9, r_L=0.30, lambda_F=1e-5, patience=20, Stage II operator =
-soft graph-spline (mhb). (The learned-metric ablation, `use_learned_metric`,
-is opt-in only and requires torch; the paper's numbers never use it.)
+The deployed form is training-free (zero learned parameters): this entry
+point deterministically constructs the checkpoint artifacts — Stage I
+manifold chart (closed-form spectral decomposition + fixed-schedule
+landmark refinement) and Stage II closed-form graph-Tikhonov operator — in
+seconds on a laptop CPU. No optimizer over model parameters, no validation
+early-stopping, and no learned weights are involved. (The learned-metric
+ablation, `use_learned_metric`, is opt-in only and requires torch; the
+paper's numbers never use it.)
 
 Data convention (produced by scripts/process_newds.py or fetched per
 data/DATA.md):
@@ -30,6 +30,7 @@ import argparse
 import json
 import os
 import pathlib
+import platform
 import random
 import sys
 import time
@@ -173,12 +174,27 @@ def main():
         "build_min": round(build_min, 2),
         "run_id": run_id,
         "deterministic": bool(args.deterministic),
+        "env": {
+            "python": platform.python_version(),
+            "numpy": np.__version__,
+            "machine": platform.machine(),
+            "system": platform.system(),
+        },
     }
     with open(out_dir / "config.json", "w") as f:
         json.dump(config, f, indent=2)
 
     print(f"[build] done. run_id={run_id}  build_min={build_min:.1f}")
     print(str(out_dir))
+    if platform.machine() not in ("x86_64", "AMD64", "i386", "i686"):
+        print(
+            f"[build] NOTE: checkpoint built on {platform.system()}/"
+            f"{platform.machine()}. The paper's numbers were produced on "
+            "x86-64 Linux; rebuilding on a different CPU architecture can "
+            "yield visibly different metrics (see REPRODUCE.md, 'What is "
+            "deterministic, and what is platform-sensitive'). For numbers "
+            "that match the paper's tables, evaluate the released "
+            "checkpoints instead of rebuilding.")
 
 
 if __name__ == "__main__":

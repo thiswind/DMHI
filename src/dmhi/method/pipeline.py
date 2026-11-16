@@ -370,8 +370,11 @@ class RiemannianImputer:
         """Construct Stage I and Stage II on a dataset.
 
         In the default deployment path (``use_learned_metric=False``) this
-        only computes closed-form structures (Stage I manifold chart, Stage II
-        soft graph-Tikhonov operator); no neural network is trained. The
+        computes deterministic structures only — no neural network and no
+        learned weights. Stage I chart construction combines closed-form
+        spectral decomposition with a fixed-schedule deterministic landmark
+        refinement (no validation early-stopping, no data-driven stopping);
+        Stage II solves the soft graph-Tikhonov system in closed form. The
         learned-metric stage remains available as an opt-in ablation via
         ``use_learned_metric=True``.
 
@@ -522,8 +525,8 @@ class RiemannianImputer:
             best_val_loss = None
             no_improve = 0
 
-        logger.info(f"Stage II closed-form refinement ready (up to {self.epochs} "
-                    "iteration cap; no optimizer step runs in the default path).")
+        logger.info(f"Stage II closed-form graph-Tikhonov operator ready "
+                    "(iter cap {0} unused: no optimizer in this path).".format(self.epochs))
         epoch_iter = (
             _tqdm(range(self.epochs), desc="Stage II", unit="ep", dynamic_ncols=True)
             if _HAS_TQDM else range(self.epochs)

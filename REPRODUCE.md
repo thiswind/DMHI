@@ -18,10 +18,12 @@ NumPy/SciPy closed form.
 
 **Ten of the paper's twelve reported domains ship inside this repository**
 under `data/processed/` (see `data/DATA.md`) — nothing to download. DMHI is
-**training-free**: `scripts/build_checkpoint.py` runs no gradient training
-in the default configuration — it deterministically regenerates the
-checkpoint's closed-form structures (Stage I manifold chart + Stage II
-graph-Tikhonov operator) in seconds on a laptop CPU, then `evaluate.py`
+**training-free**: `scripts/build_checkpoint.py` runs no model training
+in the default configuration — it deterministically constructs the
+checkpoint artifacts (Stage I manifold chart via spectral decomposition plus
+a fixed-schedule landmark refinement; Stage II graph-Tikhonov operator in
+closed form; no learned weights, no validation early-stopping) in seconds
+on a laptop CPU, then `evaluate.py`
 applies the paper protocol (block missingness, length 20, deterministic):
 
 ```bash
@@ -38,15 +40,16 @@ seed+2, mean over the per-domain seed set** (see `results/README.md`).
 if you need to probe mask sensitivity.
 
 **Reference values for this exact run** (gas_home, seed 7, `n_eval=18000`,
-mean-fill MAE 0.5816):
+mean-fill MAE 0.5816; paper protocol is mask seed = seed+2):
 
 | where you rebuild the checkpoint | MAE | MSE | RMSE | MD |
 |---|---|---|---|---|
-| Linux / OpenBLAS (the paper's stack) | 0.051789 | 0.020789 | 0.144185 | 0.198525 |
-| Apple Accelerate (macOS NumPy) | 0.146519 | 0.094725 | 0.307775 | 0.560508 |
+| x86-64 Linux (the paper's stack) | 0.051789 | 0.020789 | 0.144185 | 0.198525 |
+| arm64 macOS (Accelerate *or* OpenBLAS numpy) | 0.146519 | 0.094725 | 0.307775 | 0.560508 |
 
-Both beat mean-fill by 4x; see the platform note below for why they differ
-and which one matches the paper's printed cell (0.051 — the OpenBLAS row).
+Both rows beat mean-fill by 4x; see the platform note below for why they
+differ and which one matches the paper's printed cell (0.051 — the x86-64
+row). Do not compare a rebuilt-on-arm64 number against the paper's tables.
 
 **What is deterministic, and what is platform-sensitive.** Two different
 claims must not be conflated:
@@ -55,19 +58,22 @@ claims must not be conflated:
    imputation is deterministic; re-evaluating the same released checkpoint on
    Apple M4 vs Linux/OpenBLAS agrees to ~3e-4 in every metric (six-decimal
    reproduction within one environment). No GPU is needed at inference.
-2. *Checkpoint construction is deterministic per platform but sensitive to
-   the LAPACK backend.* Re-running `build_checkpoint.py` twice on the same
-   machine
-   reproduces all six printed decimals (verified on both an Apple M4 and a
-   Linux server). Across machines, Stage I's spectral decomposition (PCA +
-   Laplacian eigenproblem) picks different bases inside near-degenerate
-   subspaces under Apple Accelerate vs OpenBLAS; the downstream manifold
-   graph differs, and metrics shift — on gas_home, seed 7, from 0.0518
-   (OpenBLAS, matching the paper cell) to 0.1465 (Accelerate). This is a
-   property of the closed-form construction, not of any training procedure.
+2. *Checkpoint construction is deterministic per machine but not portable
+   across CPU architectures.* Re-running `build_checkpoint.py` twice on the
+   same machine reproduces all six printed decimals (verified on an Apple
+   M4 and on a Linux/x86-64 server, and bit-identically across numpy 2.x
+   and numpy 1.26 on the same M4). Across architectures (arm64 vs x86-64),
+   floating-point SIMD reduction orders differ; Stage I's spectral
+   decompositions pick different bases inside near-degenerate subspaces,
+   and the iterative landmark refinement amplifies the bit-level
+   differences, so metrics can shift visibly — on gas_home, seed 7, from
+   0.0518 (x86-64 Linux, matching the paper cell) to 0.1465 (arm64 macOS,
+   under both Accelerate and OpenBLAS numpy builds). Rebuilding on a
+   non-x86-64 machine prints a NOTE pointing here. This is a property of
+   the closed-form construction, not of any training procedure.
 
 For numbers that line up with the paper's tables on any machine, use the
-released checkpoints (Level 2), or rebuild on Linux/OpenBLAS.
+released checkpoints (Level 2), or rebuild on x86-64 Linux.
 
 To target a specific reported cell, take its hyperparameters from
 `configs/<domain>_seed<N>.json` (see `configs/README.md`) and pass them to
@@ -122,9 +128,12 @@ oversized domains (physionet2012, mimic, electricity) are handled in
 
 ## Notes for reviewers
 
-- **Training-free by construction:** the default `build()` computes
-  closed-form structures only (no optimizer, no epochs of gradient descent,
-  no learned weights); `use_learned_metric=True` exists solely as an opt-in
+- **Training-free by construction:** the default `build()` involves no
+  learned weights and no data-driven stopping (no optimizer over model
+  parameters, no validation early-stopping): Stage I combines closed-form
+  spectral decomposition with a fixed-schedule deterministic landmark
+  refinement, and Stage II is solved in closed form.
+  `use_learned_metric=True` exists solely as an opt-in
   ablation and requires torch. The public API is `build()` / `impute()` —
   there is no `fit()` and no training entry point.
 - **Same-mask discipline:** for each cell every method derives the block mask
