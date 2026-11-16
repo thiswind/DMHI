@@ -96,7 +96,7 @@ oversized domains (physionet2012, mimic, electricity) are handled in
 
   ```bash
   mkdir -p checkpoints/dmhi
-  unzip dmhi-checkpoints-v0.1.0.zip -d checkpoints/dmhi
+  unzip dmhi-checkpoints-v0.2.0.zip -d checkpoints/dmhi
   ```
 
   Then evaluate directly (no rebuilding):

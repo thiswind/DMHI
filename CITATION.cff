@@ -27,8 +27,8 @@ authors:
     given-names: Jiahui
     orcid: "https://orcid.org/0000-0001-6333-3230"
     affiliation: Yunnan University
-version: 0.1.0
-date-released: "2026-09-30"
+version: 0.2.0
+date-released: "2026-11-16"
 license: MIT
 repository-code: "https://github.com/thiswind/DMHI"
 abstract: >-

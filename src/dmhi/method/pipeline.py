@@ -1686,6 +1686,22 @@ class RiemannianImputer:
     # Persistence
     # ------------------------------------------------------------------
 
+    def __getstate__(self):
+        """Store ``_device`` as a string so closed-form checkpoints pickle
+        without importing torch on the loading machine (see ``load``)."""
+        state = self.__dict__.copy()
+        if state.get("_device") is not None:
+            state["_device"] = str(state["_device"])
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        try:
+            import torch  # noqa: F401
+        except ImportError:
+            # torch-free deployment: _device stays a plain string (unused)
+            pass
+
     def save(self, path: str) -> None:
         import pickle, pathlib
         pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -1703,10 +1719,23 @@ class RiemannianImputer:
             torch = None
 
         class _CPUUnpickler(pickle.Unpickler):
-            """Load pickles saved on MPS/CUDA into CPU tensors (Linux server compat)."""
+            """Load pickles saved on MPS/CUDA into CPU tensors (Linux server compat).
+
+            Also tolerates checkpoints whose pickle stream embeds a stored
+            ``torch.device`` attribute (``_device``) on machines without torch:
+            the shim returns None, and ``load()`` resets ``_device`` anyway.
+            """
 
             def find_class(self, module, name):
-                if module == "torch.storage" and name == "_load_from_bytes":
+                if module == "torch" and name == "device":
+                    if torch is None:
+                        return lambda *a, **k: None
+                    return torch.device
+                if (
+                    module == "torch.storage"
+                    and name == "_load_from_bytes"
+                    and torch is not None
+                ):
                     return lambda b: torch.load(
                         io.BytesIO(b), map_location="cpu", weights_only=False
                     )
@@ -1715,7 +1744,7 @@ class RiemannianImputer:
         with open(path, "rb") as f:
             try:
                 obj = pickle.load(f)
-            except (RuntimeError, pickle.UnpicklingError):
+            except (RuntimeError, pickle.UnpicklingError, ModuleNotFoundError):
                 f.seek(0)
                 obj = _CPUUnpickler(f).load()
         if torch is None:
