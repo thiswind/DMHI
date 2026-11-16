@@ -68,7 +68,7 @@ mimic are access-restricted; acquisition routes are documented in
 
 ## Reproduce
 
-Full walkthrough (checkpoints, masks, determinism, retraining):
+Full walkthrough (checkpoints, masks, determinism, platform notes):
 `REPRODUCE.md`.
 
 ## Citation

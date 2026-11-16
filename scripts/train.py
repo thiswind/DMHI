@@ -35,7 +35,13 @@ import sys
 import time
 
 import numpy as np
-import torch
+
+try:  # torch is optional at module level: the default deployment path
+    # (use_learned_metric=False) never touches it; it is imported lazily
+    # below only when the opt-in learned-metric ablation is requested.
+    import torch
+except ImportError:
+    torch = None
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
@@ -83,10 +89,13 @@ def parse_args():
 def set_seed(seed: int, deterministic: bool = False):
     random.seed(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+    if torch is not None:
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
     if deterministic:
+        if torch is None:
+            raise RuntimeError("--deterministic requires torch")
         os.environ["PYTHONHASHSEED"] = str(seed)
         os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
         torch.use_deterministic_algorithms(True, warn_only=True)

@@ -340,7 +340,7 @@ class RiemannianImputer:
             return
         if self._Z_train is None or self._M_train is None:
             raise RuntimeError(
-                "_ensure_latent_bank requires _Z_train/_M_train; call fit() or load a fitted imputer."
+                "_ensure_latent_bank requires _Z_train/_M_train; call build() or load a fitted imputer."
             )
         from .cross_neighbors import build_train_latent_bank
 
@@ -1255,7 +1255,7 @@ class RiemannianImputer:
         Returns:
             hat_X: (N, T, D) float32 with observed entries identical to X.
         """
-        assert self._is_fitted, "Call fit() first."
+        assert self._is_fitted, "Call build() first."
         N, T, D = X.shape
         hat_X = np.zeros_like(X, dtype=np.float32)
 
@@ -1693,7 +1693,10 @@ class RiemannianImputer:
         import io
         import pickle
 
-        import torch
+        try:
+            import torch
+        except ImportError:  # torch-free deployment: closed-form checkpoints only
+            torch = None
 
         class _CPUUnpickler(pickle.Unpickler):
             """Load pickles saved on MPS/CUDA into CPU tensors (Linux server compat)."""
@@ -1711,6 +1714,14 @@ class RiemannianImputer:
             except (RuntimeError, pickle.UnpicklingError):
                 f.seek(0)
                 obj = _CPUUnpickler(f).load()
+        if torch is None:
+            if obj._metric_net is not None or getattr(obj, "use_learned_metric", False):
+                raise RuntimeError(
+                    "This checkpoint contains a learned metric network; "
+                    "install torch to load it."
+                )
+            obj._device = None
+            return obj
         device = get_device()
         obj._device = device
         if obj._metric_net is not None:

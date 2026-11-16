@@ -1,11 +1,16 @@
-# Core dependencies. Python >= 3.10. Unpinned by design; the validated set is
-# recorded per release in the repository release notes.
+# Core dependencies for the deployed (training-free, closed-form) path.
+# Python >= 3.10. Unpinned by design; the validated set is recorded per
+# release in the repository release notes.
 numpy
 scipy
 scikit-learn
-torch
 matplotlib
 tqdm
+
+# Optional: torch — only for the opt-in learned-metric ablations
+# (use_learned_metric=True) and the --deterministic eval flag. The default
+# build()/impute() path and scripts/evaluate.py run without it.
+# torch
 
 # Optional: deep-learning baselines from scratch (scripts/baselines/)
 # pypots>=1.0
