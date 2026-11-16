@@ -137,7 +137,7 @@ class RiemannianImputer:
         L_enc: int = 4,
         d_ff: int = 128,
         lambda_geo: float = 1e-3,
-        # Stage II — training
+        # Stage II — learned-metric ablation only (opt-in; default path is closed-form)
         #tage E: lambda_F decreased from 1e-4 to 1e-5
         # to give the new MLE-style loss_geo more room. The Frobenius penalty
         # on G is now soft-floor (anti-explosion) rather than the dominant
