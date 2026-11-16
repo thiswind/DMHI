@@ -5,13 +5,18 @@ Imputation for Edge Deployable Multivariate Time Series"* (IEEE Internet of
 Things Journal, 2026, under review).
 
 DMHI imputes block-missing multivariate time series with a three-stage
-manifold pipeline (embed → intrinsic compute → inverse project). Inference
-uses no neural-network weights. Entry point:
+manifold pipeline (embed → intrinsic compute → inverse project). There is
+no training phase; `build()` only stores/computes closed-form structures
+and inference uses no neural-network weights, so deployment needs only
+NumPy/SciPy/scikit-learn (torch is an optional dependency used solely by
+the ablation-only learned-metric paths). Entry point:
 `dmhi.method.pipeline.RiemannianImputer`.
 
 ## Requirements
 
 Python >= 3.10. CPU is sufficient for inference and the smoke test.
+Runtime dependencies for the default path: numpy, scipy, scikit-learn
+(torch only for the optional learned-metric ablations).
 
 ## Install
 

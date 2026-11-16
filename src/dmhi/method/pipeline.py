@@ -9,10 +9,10 @@ Device priority: MPS → CUDA → CPU.
 All data must be float32. M must be int8 or bool (1=observed, 0=missing).
 Call `conda activate base` before running any Python script using this module.
 """
+from __future__ import annotations
+
 import numpy as np
-import torch
-import torch.nn as nn
-from typing import Callable, Optional
+from typing import Callable, Optional, TYPE_CHECKING
 import logging
 import os
 try:
@@ -21,8 +21,16 @@ try:
 except ImportError:
     _HAS_TQDM = False
 
+# Torch is an optional dependency: the default deployment path (build + impute
+# with use_learned_metric=False) is pure NumPy/SciPy closed form and runs on
+# machines without torch (e.g. Raspberry Pi edge nodes). Torch modules are
+# imported lazily inside the training / learned-metric code paths that need
+# them; the annotations below are typing-only.
+if TYPE_CHECKING:
+    import torch
+    import torch.nn as nn
+
 from .embed import MaskedManifoldEmbedder
-from .metric import SPDMetricNet, diagnose_G_field
 from .karcher import (
     karcher_impute,
     reset_karcher_stats,
@@ -33,7 +41,6 @@ from .karcher import (
 from .clle import clle_inverse
 from .mhb import mhb_impute
 from .utils import build_time_window_graph
-from .losses import loss_aniso, loss_geo, loss_geo_masked, loss_reg, loss_smooth, loss_time
 from .synth_missing import sample_block_mask
 from .trace import (
     PipelineTracer,
@@ -50,8 +57,10 @@ def _env_flag(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
 
 
-def get_device() -> torch.device:
-    """Return MPS > CUDA > CPU."""
+def get_device() -> "torch.device":
+    """Return MPS > CUDA > CPU (torch-only; import inside)."""
+    import torch
+
     if torch.backends.mps.is_available():
         return torch.device("mps")
     elif torch.cuda.is_available():
@@ -59,24 +68,34 @@ def get_device() -> torch.device:
     return torch.device("cpu")
 
 
-class DecoderMLP(nn.Module):
-    """Small MLP that maps latent code z (d-dim) → ambient x (D-dim).
+def _decoder_mlp_factory():
+    """Build the DecoderMLP class lazily (torch is an optional dependency).
 
-    Trained on observed (z, x) pairs from training set after Stage II.
-    Replaces CLLE inverse in Stage III for better reconstruction on
-    heavily missing datasets like PhysioNet.
+    The decoder is an ablation-only Stage III (off by default); the class is
+    constructed here so module import stays torch-free.
     """
+    import torch.nn as nn
 
-    def __init__(self, d_in: int, d_out: int, hidden: int = 256):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(d_in, hidden), nn.LayerNorm(hidden), nn.GELU(),
-            nn.Linear(hidden, hidden), nn.LayerNorm(hidden), nn.GELU(),
-            nn.Linear(hidden, d_out),
-        )
+    class DecoderMLP(nn.Module):
+        """Small MLP that maps latent code z (d-dim) → ambient x (D-dim).
 
-    def forward(self, z: torch.Tensor) -> torch.Tensor:
-        return self.net(z)
+        Trained on observed (z, x) pairs from training set after Stage II.
+        Replaces CLLE inverse in Stage III for better reconstruction on
+        heavily missing datasets like PhysioNet.
+        """
+
+        def __init__(self, d_in: int, d_out: int, hidden: int = 256):
+            super().__init__()
+            self.net = nn.Sequential(
+                nn.Linear(d_in, hidden), nn.LayerNorm(hidden), nn.GELU(),
+                nn.Linear(hidden, hidden), nn.LayerNorm(hidden), nn.GELU(),
+                nn.Linear(hidden, d_out),
+            )
+
+        def forward(self, z):
+            return self.net(z)
+
+    return DecoderMLP
 
 
 class RiemannianImputer:
@@ -415,25 +434,44 @@ class RiemannianImputer:
         # --- Stage II: train metric net (or skip if ablation_no_metric) ---
         lambda_geo_eff = 0.0 if self.ablation_no_geo_reg else self.lambda_geo
 
-        if self.ablation_metric_backbone == "mlp":
-            from .metric import MLPMetricNet
-            metric_net = MLPMetricNet(
-                d=d_actual, hidden=self.d_ff, n_layers=3, lambda_geo=lambda_geo_eff,
-            ).to(device)
-        elif self.ablation_metric_backbone == "lstm":
-            from .metric import LSTMMetricNet
-            metric_net = LSTMMetricNet(
-                d=d_actual, hidden=self.d_ff // 2, n_layers=2, lambda_geo=lambda_geo_eff,
-            ).to(device)
+        if self.ablation_no_metric:
+            # Default deployment path: no learned metric, no torch import.
+            # Stage II stays the closed-form soft graph-Tikhonov refinement
+            # (mhb_impute); nothing below needs a neural network.
+            logger.info(
+                "  [no learned metric] Stage II remains closed-form "
+                "(soft graph-Tikhonov); skipping metric-net construction."
+            )
+            self._metric_net = None
+            metric_net = None
         else:
-            metric_net = SPDMetricNet(
-                d=d_actual,
-                n_head=self.n_head,
-                n_layers=self.L_enc,
-                d_ff=self.d_ff,
-                lambda_geo=lambda_geo_eff,
-            ).to(device)
-        self._metric_net = metric_net
+            import torch
+            import torch.nn as nn
+            from .metric import SPDMetricNet, diagnose_G_field
+            from .losses import (
+                loss_aniso, loss_geo, loss_geo_masked,
+                loss_reg, loss_smooth, loss_time,
+            )
+
+            if self.ablation_metric_backbone == "mlp":
+                from .metric import MLPMetricNet
+                metric_net = MLPMetricNet(
+                    d=d_actual, hidden=self.d_ff, n_layers=3, lambda_geo=lambda_geo_eff,
+                ).to(device)
+            elif self.ablation_metric_backbone == "lstm":
+                from .metric import LSTMMetricNet
+                metric_net = LSTMMetricNet(
+                    d=d_actual, hidden=self.d_ff // 2, n_layers=2, lambda_geo=lambda_geo_eff,
+                ).to(device)
+            else:
+                metric_net = SPDMetricNet(
+                    d=d_actual,
+                    n_head=self.n_head,
+                    n_layers=self.L_enc,
+                    d_ff=self.d_ff,
+                    lambda_geo=lambda_geo_eff,
+                ).to(device)
+            self._metric_net = metric_net
 
         self._val_history = []
 
@@ -458,6 +496,9 @@ class RiemannianImputer:
             best_val_loss = float("inf")
             no_improve = 0
             tau_t = torch.tensor(self._tau, dtype=torch.float32)
+        else:
+            best_val_loss = None
+            no_improve = 0
 
         logger.info(f"Training Stage II for up to {self.epochs} epochs...")
         epoch_iter = (
@@ -615,6 +656,13 @@ class RiemannianImputer:
         )
 
         lambda_geo_eff = 0.0 if self.ablation_no_geo_reg else self.lambda_geo
+        import torch
+        import torch.nn as nn
+        from .metric import SPDMetricNet, diagnose_G_field
+        from .losses import (
+            loss_aniso, loss_geo, loss_geo_masked,
+            loss_reg, loss_smooth, loss_time,
+        )
         if self.ablation_metric_backbone == "mlp":
             from .metric import MLPMetricNet
 
@@ -793,6 +841,10 @@ class RiemannianImputer:
         device: torch.device,
     ) -> None:
         """Train DecoderMLP on observed (z_t, x_t) pairs from training set."""
+        import torch
+        import torch.nn as nn
+        DecoderMLP = _decoder_mlp_factory()
+
         N, T, D = X_train.shape
 
         # Collect pairs where any feature is observed at that timestep
@@ -911,6 +963,8 @@ class RiemannianImputer:
         batch_seed: int,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Block-mask → Karcher impute → metric field (REVISE-004)."""
+        import torch
+
         B, T, _d = Z_batch.shape
         miss_np = sample_block_mask(B, T, batch_seed)
         Z_np = Z_batch.detach().cpu().numpy()
@@ -947,6 +1001,12 @@ class RiemannianImputer:
         Z_val: np.ndarray,
         device: torch.device,
     ) -> float:
+        import torch
+        from .losses import (
+            loss_aniso, loss_geo, loss_geo_masked,
+            loss_reg, loss_smooth, loss_time,
+        )
+
         metric_net.eval()
         total = 0.0
         n_batches = 0
@@ -1120,6 +1180,8 @@ class RiemannianImputer:
             or self.ablation_no_metric
         ):
             return 0.0, 0.0, 0.0
+        import torch
+
         d = Z_seq.shape[1]
         I_d = np.eye(d, dtype=np.float32)
         self._metric_net.eval()
@@ -1365,6 +1427,8 @@ class RiemannianImputer:
             # Stage III: inverse mapping
             if self._decoder is not None:
                 # DecoderMLP path (ablation_use_decoder or default decoder)
+                import torch
+
                 with torch.no_grad():
                     z_t = torch.from_numpy(Z_prime.astype(np.float32)).to(self._device)
                     x_hat_t = self._decoder(z_t).cpu().numpy()
@@ -1405,6 +1469,8 @@ class RiemannianImputer:
                     and not self.scoped_g_simplex
                 )
                 if use_metric_simplex:
+                    import torch
+
                     self._metric_net.eval()
                     with torch.no_grad():
                         Z_pt = (
