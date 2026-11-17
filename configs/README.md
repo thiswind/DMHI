@@ -32,7 +32,8 @@ the twelve domains reported in the paper's Tables II and III; the remaining
 domains come from the broader evaluation campaign (ablations and scale
 studies) and are listed in `data/DATA.md`:
 
-- `hydraulic`: 4 files
+- `hydraulic`: 4 files (ablation-only domain; not in the 12-domain tables
+  and not in the release checkpoint zip)
 - 16 domains with 3 files each: `air_quality_italy`, `breizh_pheno`,
   `breizh_rs`, `delta_robot`, `electricity`, `gait_uci`, `gas_home`, `kuka`,
   `mhealth`, `mimic`, `mocap_karate`, `nanodrone`, `nanodrone_dec`,
