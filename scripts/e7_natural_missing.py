@@ -143,9 +143,19 @@ def main():
     M_full = np.load(f"data/processed/{ds}/M_test.npy").astype(np.int8)
     N, T, D = X.shape
 
-    ck = args.ckpt or f"checkpoints/e2/{ds}_seed{args.seed}/checkpoint.pkl"
-    with open(ck, "rb") as f:
-        imp = pickle.load(f)
+    ck = args.ckpt
+    if not ck:
+        for cand in (f"checkpoints/dmhi/{ds}_seed{args.seed}/checkpoint.pkl",
+                     f"checkpoints/e2/{ds}_seed{args.seed}/checkpoint.pkl"):
+            if pathlib.Path(cand).exists():
+                ck = cand
+                break
+    if not ck:
+        sys.exit(f"checkpoint for {ds} seed {args.seed} not found — unpack "
+                 "the release zip under checkpoints/dmhi/ or pass --ckpt")
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
+    from dmhi.method.pipeline import RiemannianImputer
+    imp = RiemannianImputer.load(ck)
 
     protocols = {}
     # — A: native-pattern masking —

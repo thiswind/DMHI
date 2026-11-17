@@ -69,9 +69,18 @@ def main():
     M_full = np.concatenate([M_test[sel].astype(np.int8)] * reps, axis=1)
     T_total = X_stream.shape[1]
 
-    ckpt_path = args.ckpt or f"checkpoints/e2/{args.dataset}_seed{args.seed}/checkpoint.pkl"
-    with open(ckpt_path, "rb") as f:
-        imp = pickle.load(f)
+    ckpt_path = args.ckpt
+    if not ckpt_path:
+        for cand in (f"checkpoints/dmhi/{args.dataset}_seed{args.seed}/checkpoint.pkl",
+                     f"checkpoints/e2/{args.dataset}_seed{args.seed}/checkpoint.pkl"):
+            if pathlib.Path(cand).exists():
+                ckpt_path = cand
+                break
+    if not ckpt_path:
+        sys.exit(f"checkpoint for {args.dataset} seed {args.seed} not found — "
+                 "unpack the release zip under checkpoints/dmhi/ or pass --ckpt")
+    from dmhi.method.pipeline import RiemannianImputer
+    imp = RiemannianImputer.load(ckpt_path)
     print(f"[e9] {args.dataset}: W={W} S={S} stream T={T_total} "
           f"(N={len(sel)}) imputer={ckpt_path}")
 
