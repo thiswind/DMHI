@@ -61,8 +61,8 @@ claims must not be conflated:
 
 1. *Inference is deterministic and portable.* Given a checkpoint and a mask,
    imputation is deterministic; re-evaluating the same released checkpoint
-   reproduces the paper's table numbers bit-for-bit on x86-64 (verified on
-   all 36 runs, including under the newest scipy 1.16.3 / scikit-learn
+   reproduces the paper's table numbers bit-for-bit on x86-64 (all 36 runs;
+   plus a mocap spot-check under the newest scipy 1.16.3 / scikit-learn
    1.9.0). On arm64 (Apple Silicon) 40 of 48 printed cells match exactly;
    the rest can differ by ±1 in the third decimal (absolute difference
    ≤ 0.003, BLAS SIMD reduction order) with no change to any ranking or

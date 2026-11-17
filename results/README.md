@@ -41,9 +41,10 @@ Notes:
   `newds_v2` protocol if you need the raw data; the released checkpoints
   evaluate them once the processed arrays are in place under
   `data/processed/`.
-- All 12 domains were re-verified on x86-64 Linux (OpenBLAS / numpy 2.2.6,
-  and again under the newest stack scipy 1.16.3 / scikit-learn 1.9.0): all
-  36 runs reproduce the four metrics **bit-for-bit**.
+- All 12 domains were re-verified on x86-64 Linux (OpenBLAS / numpy 2.2.6):
+  all 36 runs reproduce the four metrics **bit-for-bit**. A spot-check
+  subset (mocap, 3 runs) is also bit-identical under the newest stack
+  scipy 1.16.3 / scikit-learn 1.9.0.
 - On Apple Silicon (arm64), 40 of the 48 table cells match exactly; the
   remaining cells can differ by ±1 in the third decimal (absolute
   difference ≤ 0.003; BLAS reduction order). No bold/underline ranking or
