@@ -45,9 +45,21 @@ From a fresh clone:
 This evaluates all 12 domains x 3 seeds at the paper protocol
 (L=20, rho=0.9, mask seed = run seed + 2), averages the seeds, and prints
 the complete DMHI row of Table II/III. Each run's value is printed, so
-every cell is traceable. On x86-64 all 48 cells match the manuscript at
-three decimals; on arm64 at most 8 cells differ by ±1 in the third
-decimal (`REPRODUCE.md` explains what is platform-sensitive).
+every cell is traceable.
+
+The same commands run on all three platforms we tested; only the unpack
+step differs on Windows (no `unzip` there; `tar` ships with Windows 10+):
+
+| Platform | Unpack with | Result |
+|---|---|---|
+| x86-64 Linux | `unzip` | all 48 cells bit-for-bit |
+| x86-64 native Windows (PowerShell) | `tar -xf <zip> -C <dir>` | all 48 cells bit-for-bit (tested: Win 11, Python 3.14, numpy 2.4.3) |
+| Apple Silicon macOS (arm64) | `unzip` | up to 15 of 48 printed cells differ by <=0.003 (3rd decimal); no ranking or conclusion changes |
+
+Dependencies are unpinned on purpose: a fresh `pip install -r
+requirements.txt` works on all three platforms; the validated version set
+for this release is recorded in the release notes. Details on what is
+platform-sensitive: `REPRODUCE.md`.
 
 Single run instead of the whole table:
 

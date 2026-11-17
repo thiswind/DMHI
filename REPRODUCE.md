@@ -4,7 +4,7 @@ Three levels, increasing in data requirements.
 
 > **Which level reproduces the paper's table numbers?** Level 2 (released
 > checkpoints + evaluate). Level 1 rebuilding is a sanity check whose
-> numbers can shift with your CPU architecture — see the platform note
+> numbers can shift with your CPU architecture; see the platform note
 > below before comparing anything against the tables.
 
 ## Level 0 — smoke test (no data, seconds)
@@ -22,9 +22,9 @@ NumPy/SciPy closed form.
 ## Level 1 — evaluate a paper domain end to end (minutes, no downloads)
 
 **Ten of the paper's twelve reported domains ship inside this repository**
-under `data/processed/` (see `data/DATA.md`) — nothing to download. DMHI is
+under `data/processed/` (see `data/DATA.md`); nothing to download. DMHI is
 **training-free**: `scripts/build_checkpoint.py` runs no model training
-in the default configuration — it deterministically constructs the
+in the default configuration: it deterministically constructs the
 checkpoint artifacts (Stage I manifold chart via spectral decomposition plus
 a fixed-schedule landmark refinement; Stage II graph-Tikhonov operator in
 closed form; no learned weights, no validation early-stopping) in seconds
@@ -53,7 +53,7 @@ mean-fill MAE 0.5816; paper protocol is mask seed = seed+2):
 | arm64 macOS (Accelerate *or* OpenBLAS numpy) | 0.146519 | 0.094725 | 0.307775 | 0.560508 |
 
 Both rows beat mean-fill by 4x; see the platform note below for why they
-differ and which one matches the paper's printed cell (0.051 — the x86-64
+differ and which one matches the paper's printed cell (0.051, the x86-64
 row). Do not compare a rebuilt-on-arm64 number against the paper's tables.
 
 **What is deterministic, and what is platform-sensitive.** Two different
@@ -61,11 +61,15 @@ claims must not be conflated:
 
 1. *Inference is deterministic and portable.* Given a checkpoint and a mask,
    imputation is deterministic; re-evaluating the same released checkpoint
-   reproduces the paper's table numbers bit-for-bit on x86-64 (all 36 runs;
-   plus a mocap spot-check under the newest scipy 1.16.3 / scikit-learn
-   1.9.0). On arm64 (Apple Silicon) 40 of 48 printed cells match exactly;
-   the rest can differ by ±1 in the third decimal (absolute difference
-   ≤ 0.003, BLAS SIMD reduction order) with no change to any ranking or
+   reproduces the paper's table numbers bit-for-bit on x86-64. Verified
+   on Linux (all 36 runs, OpenBLAS / numpy 2.2.6) and on native Windows 11
+   (all 36 runs, Python 3.14 / numpy 2.4.3 / scipy 1.17.1 / scikit-learn
+   1.8.0); a Linux spot-check under scipy 1.16.3 / scikit-learn 1.9.0
+   also matches. On arm64 (Apple Silicon) the printed cells drift by at
+   most 0.003 absolute, up to 3 in the third decimal (measured: 15 of 48
+   cells on an M4 under numpy 2.5.5 / scipy 1.18.1 and identically under
+   numpy 2.2.6 / scipy 1.16.1; the drift count tracks the BLAS/LAPACK
+   build, not the package versions), with no change to any ranking or
    conclusion. No GPU is needed at inference.
 2. *Checkpoint construction is deterministic per machine but not portable
    across CPU architectures.* Re-running `build_checkpoint.py` twice on the
@@ -75,7 +79,7 @@ claims must not be conflated:
    floating-point SIMD reduction orders differ; Stage I's spectral
    decompositions pick different bases inside near-degenerate subspaces,
    and the iterative landmark refinement amplifies the bit-level
-   differences, so metrics can shift visibly — on gas_home, seed 7, from
+   differences, so metrics can shift visibly: on gas_home, seed 7, from
    0.0518 (x86-64 Linux, matching the paper cell) to 0.1465 (arm64 macOS,
    under both Accelerate and OpenBLAS numpy builds). Rebuilding on a
    non-x86-64 machine prints a NOTE pointing here. This is a property of
@@ -92,7 +96,7 @@ domains (physionet2012, mimic) are covered in `data/DATA.md`.
 ## Level 2 — released checkpoints + baselines
 
 - **Checkpoints.** The released "Ours" checkpoints for the 12 paper-table
-  domains (213.6 MB zip, 36 runs: 12 domains x seeds {7, 42, 123}) are
+  domains (96 MB zip, 36 runs: 12 domains x seeds {7, 42, 123}) are
   distributed as a release archive (`dmhi-checkpoints-v0.2.0.zip`, see
   GitHub *Releases*). The zip stores the run directories flat
   (`<domain>_seed<N>/`) together with a `README.md`, so unpack it into
@@ -101,6 +105,8 @@ domains (physionet2012, mimic) are covered in `data/DATA.md`.
   ```bash
   mkdir -p checkpoints/dmhi
   unzip dmhi-checkpoints-v0.2.0.zip -d checkpoints/dmhi
+  # Windows PowerShell equivalent (no unzip on Windows):
+  #   tar -xf dmhi-checkpoints-v0.2.0.zip -C checkpoints/dmhi
   ```
 
   Then evaluate directly (no rebuilding):
@@ -110,23 +116,24 @@ domains (physionet2012, mimic) are covered in `data/DATA.md`.
       --rate 0.9 --block_size 20 --seed 7
   ```
 
-  (Drop `--deterministic` unless torch is installed — it is an optional
+  (Drop `--deterministic` unless torch is installed; it is an optional
   strictness flag, not needed for exact reproduction.) Each run directory
   carries the `config.json` written when the checkpoint was constructed
   (hyperparameters exact; see `configs/README.md` for the reconstruction
   caveat on non-primary domains) and a `metrics.json` sidecar computed at
-  the paper protocol (rho=0.9) on x86-64 — the reference value for
+  the paper protocol (rho=0.9) on x86-64; the reference value for
   gas_home seed 7 is `MAE=0.051789  MSE=0.020789  RMSE=0.144185
   MD=0.198525`, matching the paper's reported gas_home cell
   (0.051 / 0.020 / 0.143 / 0.197) at the table's three decimals.
   **DUA domains.** The raw arrays for `mimic` / `physionet2012` are not in
   git; during peer review their *processed* arrays ship as a second
-  release asset `dmhi-dua-arrays-v0.2.0.zip` (14 MB) — unpack it under
+  release asset `dmhi-dua-arrays-v0.2.0.zip` (14 MB): unpack it under
   `data/processed/` and every domain in the table becomes reproducible
   with zero flags:
 
   ```bash
   unzip dmhi-dua-arrays-v0.2.0.zip -d data/processed/
+  # Windows: tar -xf dmhi-dua-arrays-v0.2.0.zip -C data/processed/
   python scripts/reproduce_table.py
   ```
 
@@ -155,14 +162,14 @@ domains (physionet2012, mimic) are covered in `data/DATA.md`.
   spectral decomposition with a fixed-schedule deterministic landmark
   refinement, and Stage II is solved in closed form.
   `use_learned_metric=True` exists solely as an opt-in
-  ablation and requires torch. The public API is `build()` / `impute()` —
+  ablation and requires torch. The public API is `build()` / `impute()`;
   there is no `fit()` and no training entry point.
 - **Same-mask discipline:** for each cell every method derives the block mask
   from the same `(domain, block_size, seed)` arithmetic, so masks are
   byte-identical across methods. Mask-draw variability is about `1e-3` MAE,
   well below method gaps.
 - **Determinism:** given checkpoint and mask, imputation is deterministic on
-  CPU — no GPU required at inference; six-decimal reproduction within one
+  CPU; no GPU required at inference; six-decimal reproduction within one
   environment, `1e-3`-scale agreement across different BLAS backends.
 - **Data honesty:** ten domains are verifiable with zero external access;
   the two DUA-gated ICU streams ship as a review-stage array zip (see

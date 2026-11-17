@@ -2,7 +2,7 @@
 
 The paper reports Tables II/III on 12 multivariate time series domains.
 **Ten of the twelve ship directly in this repository** under `data/processed/`
-as ready-to-use `(N, T, D)` arrays — for these, reproduction needs no
+as ready-to-use `(N, T, D)` arrays; for these, reproduction needs no
 downloads at all. The two exceptions are DUA-restricted (see the last
 section).
 
@@ -24,7 +24,7 @@ data/processed/<domain>/
 Splits are subject-disjoint where a subject id exists (no leakage).
 Evaluation missingness (block, length 20) is applied at run time by
 `scripts/evaluate.py` / `scripts/baselines/common.py` from the
-cell's `(domain, missing_rate, block_size, seed)` — every method sees
+cell's `(domain, missing_rate, block_size, seed)`, so every method sees
 byte-identical masks.
 
 ## Domain index
@@ -86,7 +86,7 @@ doubt, trust the shipped arrays (they are the ones behind the paper tables).
 | `electricity` | pure size: 215 MB would dominate the repository | not redistributed; used only by the long-stream scale study (not a paper table) | — |
 
 **Review-stage note on the DUA domains.** During peer review we distribute
-the *processed* arrays (z-scored windows — no direct record values) and
+the *processed* arrays (z-scored windows, no direct record values) and
 the fitted checkpoints (which store only low-dimensional anchor
 coordinates) as release assets, so every table cell is reproducible from
 the repository alone. Should a data holder object, we will withdraw the
@@ -96,5 +96,5 @@ authoritative path.
 ## Sample data
 
 `src/dmhi/utils/sample/` contains a tiny synthetic set used by
-`tests/test_smoke.py` (regenerable via `src/dmhi/utils/make_sample.py`) — it
+`tests/test_smoke.py` (regenerable via `src/dmhi/utils/make_sample.py`); it
 is not a paper domain.

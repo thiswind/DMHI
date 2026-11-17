@@ -46,11 +46,14 @@ Notes:
   all 36 runs reproduce the four metrics **bit-for-bit**. A spot-check
   subset (mocap, 3 runs) is also bit-identical under the newest stack
   scipy 1.16.3 / scikit-learn 1.9.0.
-- On Apple Silicon (arm64), 40 of the 48 table cells match exactly; the
-  remaining cells can differ by ±1 in the third decimal (absolute
-  difference ≤ 0.003; BLAS reduction order). No bold/underline ranking or
-  paper conclusion changes. A representative subset also runs on numpy
-  1.26.4 without torch installed (same arm64 tolerances).
+- On Apple Silicon (arm64), the majority of the 48 table cells match
+  exactly; the rest can differ by up to 0.003 absolute (up to 3 in the
+  third decimal; measured 15 of 48 cells, identical counts under
+  numpy 2.2.6 / scipy 1.16.1 and numpy 2.5.5 / scipy 1.18.1 on an M4;
+  the count tracks the BLAS/LAPACK build, not the package versions).
+  No bold/underline ranking or paper conclusion changes. A representative
+  subset also runs on numpy 1.26.4 without torch installed (same arm64
+  tolerances).
 
 ### Why the third decimal can differ across machines
 
@@ -65,8 +68,8 @@ SIMD reduction order; see REPRODUCE.md). Verified on this repository:
   stack (`scipy 1.16.3 / scikit-learn 1.9.0`) reproduces the repository
   value exactly;
 - across x86-64 environments the numbers are bit-identical; on arm64 the
-  largest observed residual is 2.6e-3 (MD), which can shift a printed cell
-  by ±1 in the third decimal but never changes any ranking (each affected
+  largest observed residual is 2.7e-3, which can shift a printed cell by up
+  to 3 in the third decimal but never changes any ranking (each affected
   cell's gap to the runner-up method is more than 10x the drift).
 
 ## Table IV — inference speed
