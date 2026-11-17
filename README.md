@@ -5,15 +5,14 @@ Imputation for Edge Deployable Multivariate Time Series"* (IEEE Internet of
 Things Journal, 2026, under review).
 
 DMHI imputes block-missing multivariate time series with a three-stage
-manifold pipeline (embed → intrinsic compute → inverse project). There is
-no training phase and no learned weights: `build()` constructs the Stage I
-manifold chart by deterministic spectral decomposition plus a fixed-schedule
-landmark refinement (fixed iteration count, no validation early-stopping),
-solves the Stage II graph-Tikhonov system in closed form, and inference
-uses no neural-network weights, so deployment needs only
-NumPy/SciPy/scikit-learn (torch is an optional dependency used solely by
-the ablation-only learned-metric paths). Entry point:
-`dmhi.method.pipeline.RiemannianImputer`.
+manifold pipeline: embed → intrinsic compute → inverse project. There is
+no training phase and no learned weights. `build()` constructs the Stage I
+manifold chart by deterministic spectral decomposition plus a
+fixed-schedule landmark refinement (fixed iteration count, no validation
+early-stopping); Stage II solves the graph-Tikhonov system in closed form;
+inference runs on NumPy/SciPy/scikit-learn alone (torch is an optional
+dependency used only by the ablation-only learned-metric paths). Entry
+point: `dmhi.method.pipeline.RiemannianImputer`.
 
 ## Requirements
 
@@ -34,22 +33,33 @@ or `pip install -r requirements.txt`.
 Builds a small `RiemannianImputer` on the bundled synthetic sample and checks
 finiteness and observed-entry preservation. Runs in seconds.
 
-## Evaluate a checkpoint
+## Reproduce the paper tables
 
-Download the checkpoint archive from the GitHub release and unpack it under
-`checkpoints/dmhi/` (see `REPRODUCE.md`). Then:
+From a fresh clone:
+
+    # from the GitHub release page, download two archives, then:
+    unzip dmhi-checkpoints-v0.2.0.zip -d checkpoints/dmhi
+    unzip dmhi-dua-arrays-v0.2.0.zip -d data/processed
+    python scripts/reproduce_table.py
+
+This evaluates all 12 domains x 3 seeds at the paper protocol
+(L=20, rho=0.9, mask seed = run seed + 2), averages the seeds, and prints
+the complete DMHI row of Table II/III. Each run's value is printed, so
+every cell is traceable. On x86-64 all 48 cells match the manuscript at
+three decimals; on arm64 at most 8 cells differ by ±1 in the third
+decimal (`REPRODUCE.md` explains what is platform-sensitive).
+
+Single run instead of the whole table:
 
     python scripts/evaluate.py \
         --run_dir checkpoints/dmhi/gas_home_seed7 \
         --block_size 20 --rate 0.9 --seed 7
 
-Expected output on x86-64: `MAE=0.051789 / MSE=0.020789 / RMSE=0.144185 /
-MD=0.198525` (mask seed = seed + 2; arm64 numbers differ slightly, see
-`REPRODUCE.md`). `--rate` defaults to the checkpoint's build protocol
-(config.json, e.g. 0.7 for some domains) — **always pass `--rate 0.9` for
-the paper protocol**, or use `scripts/reproduce_table.py` which sets it
-for you. Per-domain, per-seed expected values:
-`results/README.md`. Per-cell hyperparameters: `configs/`.
+Expected on x86-64: `MAE=0.051789 / MSE=0.020789 / RMSE=0.144185 /
+MD=0.198525`. Note `--rate` defaults to the checkpoint's build protocol
+(e.g. 0.7 for some domains), not the paper's 0.9. Per-domain, per-seed
+expected values: `results/README.md`. Per-cell hyperparameters:
+`configs/`.
 
 ## Benchmark
 
@@ -61,22 +71,20 @@ a single domain.
 ## Layout
 
     src/dmhi/method/   the pipeline (importable package)
-    scripts/           build_checkpoint / evaluate / benchmark / data / analysis
+    scripts/           build_checkpoint / evaluate / reproduce_table / benchmark
     configs/           one JSON per reported paper cell
-    data/processed/    10 of the 12 paper domains (see data/DATA.md)
+    data/processed/    10 of 12 paper domains in git; the other 2 ship in the
+                       DUA release zip (see above)
     tests/             smoke, config, and data sanity tests
     results/           expected metrics for spot checks
 
 ## Data
 
-10 of the 12 paper domains ship under `data/processed/`. physionet2012 and
-mimic are access-restricted; acquisition routes are documented in
-`data/DATA.md`.
-
-## Reproduce
-
-Full walkthrough (checkpoints, masks, determinism, platform notes):
-`REPRODUCE.md`.
+10 of the 12 paper domains ship under `data/processed/`. The remaining
+two (`physionet2012`, `mimic`) are DUA-gated: their processed arrays ship
+in `dmhi-dua-arrays-v0.2.0.zip` on the release page for reviewer
+convenience (withdrawable on request); the credentialed acquisition route
+is in `data/DATA.md`.
 
 ## Citation
 
