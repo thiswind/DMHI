@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dmhi"
-version = "0.1.0"
+version = "0.2.0"
 description = "Deterministic Manifold Harmonic Imputation for edge-deployable multivariate time series"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -35,12 +35,12 @@ dependencies = [
     "numpy",
     "scipy",
     "scikit-learn",
-    "torch",
     "matplotlib",
     "tqdm",
 ]
 
 [project.optional-dependencies]
+torch = ["torch"]  # learned-metric ablations only; the deployed path is torch-free
 baselines = ["pypots>=1.0", "h5py", "pandas"]
 dev = ["pytest"]
 

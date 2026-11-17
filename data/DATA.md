@@ -2,7 +2,7 @@
 
 The paper reports Tables II/III on 12 multivariate time series domains.
 **Ten of the twelve ship directly in this repository** under `data/processed/`
-as ready-to-use `(N, T, D)` arrays — for these, reproduction needs no
+as ready-to-use `(N, T, D)` arrays; for these, reproduction needs no
 downloads at all. The two exceptions are DUA-restricted (see the last
 section).
 
@@ -24,7 +24,7 @@ data/processed/<domain>/
 Splits are subject-disjoint where a subject id exists (no leakage).
 Evaluation missingness (block, length 20) is applied at run time by
 `scripts/evaluate.py` / `scripts/baselines/common.py` from the
-cell's `(domain, missing_rate, block_size, seed)` — every method sees
+cell's `(domain, missing_rate, block_size, seed)`, so every method sees
 byte-identical masks.
 
 ## Domain index
@@ -77,25 +77,24 @@ python scripts/build_swiss_trajectory.py
 The in-repo arrays and the rebuild scripts produce the same splits; when in
 doubt, trust the shipped arrays (they are the ones behind the paper tables).
 
-## Domains not in the repository, and how to get them
-
-The three below are **not redistributed here on purpose**. For each we state
-the reason and the exact reader-side route:
+## Domains not in git, and how to get them
 
 | domain | why not in git | how to obtain | then what |
 |---|---|---|---|
-| `physionet2012` | PhysioNet Health Data License / DUA **forbids redistribution** of derived record data | create a free credentialed account at [physionet.org](https://physionet.org/content/challenge-2012/), accept the DUA, download Set A/B | process to the (N,T,D) format with train-statistics z-scoring (protocol as in the paper); or request our processed copy for verification under the same DUA terms |
-| `mimic` | MIMIC-III access requires **credentialed** training and its DUA **forbids redistribution** | apply at [mimic.mit.edu](https://mimic.mit.edu/ivwww/mimic-iii/) (e.gCredentialing), download MIMIC-III Clinical Database | same processing protocol as above; we cannot hand out copies, DUA forbids it |
-| `electricity` | pure size: 215 MB would dominate the repository | shipped as a **release archive** alongside the trained checkpoints (see [REPRODUCE.md](../REPRODUCE.md)); used only by the long-stream scale study | unpack under `data/processed/electricity/` |
+| `physionet2012` | PhysioNet Health Data License / DUA restricts redistribution of derived record data | free credentialed account at [physionet.org](https://physionet.org/content/challenge-2012/), accept the DUA, download Set A/B; or take the review-stage processed copy from the `dmhi-dua-arrays-v0.2.0.zip` release asset (see below) | unpack into `data/processed/physionet2012/`; processing protocol: 48-step windows, train-statistics z-scoring |
+| `mimic` | MIMIC-III DUA restricts redistribution (credentialed access required) | apply at [mimic.mit.edu](https://mimic.mit.edu/), download MIMIC-III Clinical Database; or take the review-stage processed copy from the same zip | unpack into `data/processed/mimic/`; same protocol |
+| `electricity` | pure size: 215 MB would dominate the repository | not redistributed; used only by the long-stream scale study (not a paper table) | — |
 
-We deliberately do not ship even "derived" versions of the DUA datasets:
-publishing model outputs that leak record-level values would violate the
-agreements. If you need verification on these domains and hold the
-credentials yourself, open an issue and we will help you run the pipeline on
-your side.
+**Review-stage note on the DUA domains.** During peer review we distribute
+the *processed* arrays (z-scored windows, no direct record values) and
+the fitted checkpoints (which store only low-dimensional anchor
+coordinates) as release assets, so every table cell is reproducible from
+the repository alone. Should a data holder object, we will withdraw the
+array archive on request; the credentialed route above remains the
+authoritative path.
 
 ## Sample data
 
 `src/dmhi/utils/sample/` contains a tiny synthetic set used by
-`tests/test_smoke.py` (regenerable via `src/dmhi/utils/make_sample.py`) — it
+`tests/test_smoke.py` (regenerable via `src/dmhi/utils/make_sample.py`); it
 is not a paper domain.

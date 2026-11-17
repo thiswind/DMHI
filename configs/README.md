@@ -3,8 +3,8 @@
 One JSON file per reported paper cell, named `<domain>_seed<N>.json`. These
 are the exact hyperparameters behind every "Ours" number in the paper; each
 file mirrors the `config.json` written next to the corresponding checkpoint
-(`checkpoints/dmhi/<domain>_seed<N>/config.json` — checkpoints themselves are
-not redistributed, see `../REPRODUCE.md`).
+(`checkpoints/dmhi/<domain>_seed<N>/config.json`; the 12-domain table
+checkpoints ship in the release zip, see `../REPRODUCE.md`).
 
 ## Schema
 
@@ -23,7 +23,7 @@ not redistributed, see `../REPRODUCE.md`).
 | `train_min` | train-split normalization floor (optional, domain-specific) |
 | `run_id` | canonical run identifier (`<domain>_<pattern>bs<block>_<rate>_seed<N>`) |
 | `deterministic` | deterministic inference flag |
-| `reconstructed` | `true` when the config was recovered from the fitted checkpoint instead of written at training time (optional; hyperparameters are read from the fitted imputer and are exact — see `../REPRODUCE.md`) |
+| `reconstructed` | `true` when the config was recovered from the fitted checkpoint instead of written at training time (optional; hyperparameters are read from the fitted imputer and are exact; see `../REPRODUCE.md`) |
 
 ## Index
 
@@ -32,7 +32,8 @@ the twelve domains reported in the paper's Tables II and III; the remaining
 domains come from the broader evaluation campaign (ablations and scale
 studies) and are listed in `data/DATA.md`:
 
-- `hydraulic`: 4 files
+- `hydraulic`: 4 files (ablation-only domain; not in the 12-domain tables
+  and not in the release checkpoint zip)
 - 16 domains with 3 files each: `air_quality_italy`, `breizh_pheno`,
   `breizh_rs`, `delta_robot`, `electricity`, `gait_uci`, `gas_home`, `kuka`,
   `mhealth`, `mimic`, `mocap_karate`, `nanodrone`, `nanodrone_dec`,

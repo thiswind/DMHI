@@ -54,7 +54,7 @@ def stitch_impute(imputer, X_long: np.ndarray, M_long: np.ndarray,
     """Impute a long ``(N, T, D)`` batch via overlapping windows of length ``W``.
 
     Args:
-        imputer: a fitted ``RiemannianImputer`` (trained at window length ``W``),
+        imputer: a built ``RiemannianImputer`` (constructed at window length ``W``),
             exposing ``impute(X, M) -> hat_X``.
         X_long:  ``(N, T, D)`` float32, typically ``T >> W``.
         M_long:  ``(N, T, D)`` int8/bool mask, 1 = observed.

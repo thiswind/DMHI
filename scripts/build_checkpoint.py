@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Fit DMHI (RiemannianImputer) on a processed dataset and save a checkpoint.
+"""Build a DMHI (RiemannianImputer) checkpoint on a processed dataset.
 
-Note: the paper's deployed form is training-free (zero trained parameters);
-this entry point regenerates the checkpoint artifacts (Stage I embedding +
-Stage II metric refinement) for research reproducibility. This is the
-fitting entry point behind the paper's "Ours" checkpoints. The
-deployed configuration (see configs/ and REPRODUCE.md) corresponds to the
-defaults used here: d = min(12, D-2) unless overridden, k=10, k_clle=9,
-r_L=0.30, lambda_F=1e-5, epochs=200 (Stage I and Stage II), patience=20,
-Stage II operator = soft graph-spline (mhb).
+The deployed form is training-free (zero learned parameters): this entry
+point deterministically constructs the checkpoint artifacts — Stage I
+manifold chart (closed-form spectral decomposition + fixed-schedule
+landmark refinement) and Stage II closed-form graph-Tikhonov operator — in
+seconds on a laptop CPU. No optimizer over model parameters, no validation
+early-stopping, and no learned weights are involved. (The learned-metric
+ablation, `use_learned_metric`, is opt-in only and requires torch; the
+paper's numbers never use it.)
 
 Data convention (produced by scripts/process_newds.py or fetched per
 data/DATA.md):
@@ -20,7 +20,7 @@ Datasets without native masks (e.g. cmapss) are treated as fully observed,
 which matches how their baselines were generated.
 
 Usage:
-    python scripts/train.py --dataset gas_home --seed 7 \
+    python scripts/build_checkpoint.py --dataset gas_home --seed 7 \
         --out_dir checkpoints/dmhi
 
     python scripts/evaluate.py --run_dir checkpoints/dmhi/gas_home_seed7 \
@@ -30,12 +30,19 @@ import argparse
 import json
 import os
 import pathlib
+import platform
 import random
 import sys
 import time
 
 import numpy as np
-import torch
+
+try:  # torch is optional at module level: the default deployment path
+    # (use_learned_metric=False) never touches it; it is imported lazily
+    # below only when the opt-in learned-metric ablation is requested.
+    import torch
+except ImportError:
+    torch = None
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
@@ -54,6 +61,8 @@ def parse_args():
                    help="Block length (used only when --pattern block)")
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--out_dir", default="checkpoints/dmhi")
+    p.add_argument("--run_suffix", default="",
+                   help="optional suffix appended to run_id (E4 sweep configs)")
     # Model hyperparameters — defaults follow the deployed configuration.
     p.add_argument("--d", type=int, default=0,
                    help="latent chart dimension; 0 -> min(12, D-2)")
@@ -70,6 +79,8 @@ def parse_args():
     p.add_argument("--stage2_method", default="mhb", choices=["mhb", "karcher"],
                    help="'mhb' = paper default (soft graph-spline); "
                         "'karcher' = ablation operator")
+    p.add_argument("--spline_gamma", type=float, default=0.02,
+                   help="Stage II soft-spline Tikhonov weight (E4 sweep knob)")
     p.add_argument("--deterministic", action="store_true",
                    help="strict determinism: torch deterministic algorithms, "
                         "single thread, deterministic cudnn. Slower (2-4x).")
@@ -79,10 +90,13 @@ def parse_args():
 def set_seed(seed: int, deterministic: bool = False):
     random.seed(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+    if torch is not None:
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
     if deterministic:
+        if torch is None:
+            raise RuntimeError("--deterministic requires torch")
         os.environ["PYTHONHASHSEED"] = str(seed)
         os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
         torch.use_deterministic_algorithms(True, warn_only=True)
@@ -111,7 +125,7 @@ def main():
 
     N, T, D = X_train.shape
     d = args.d if args.d > 0 else min(12, D - 2)
-    print(f"[train] {args.dataset} train={X_train.shape} val={X_val.shape} "
+    print(f"[build] {args.dataset} train={X_train.shape} val={X_val.shape} "
           f"d={d} obs_frac={M_train.mean():.3f}", flush=True)
 
     imputer = RiemannianImputer(
@@ -127,17 +141,19 @@ def main():
         batch_size=args.batch_size,
         patience=args.patience,
         stage2_method=args.stage2_method,
+        mhb_params={"mode": "soft", "spline_gamma": args.spline_gamma,
+                    "k_latent": 10, "K": 5, "gamma": 1e-3},
     )
 
     t0 = time.time()
-    imputer.fit(X_train, M_train, X_val, M_val)
-    train_min = (time.time() - t0) / 60.0
+    imputer.build(X_train, M_train, X_val, M_val)
+    build_min = (time.time() - t0) / 60.0
 
-    run_id = f"{args.dataset}_seed{args.seed}"
+    run_id = f"{args.dataset}_seed{args.seed}" + (f"_{args.run_suffix}" if args.run_suffix else "")
     out_dir = pathlib.Path(args.out_dir) / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
     imputer.save(str(out_dir / "checkpoint.pkl"))
-    print(f"[train] checkpoint saved: {out_dir / 'checkpoint.pkl'}")
+    print(f"[build] checkpoint saved: {out_dir / 'checkpoint.pkl'}")
 
     config = {
         "dataset": args.dataset,
@@ -152,17 +168,33 @@ def main():
         "lr": args.lr,
         "lambda_F": args.lambda_F,
         "lambda_smooth": args.lambda_smooth,
+        "spline_gamma": args.spline_gamma,
         "batch_size": args.batch_size,
         "patience": args.patience,
-        "train_min": round(train_min, 2),
+        "build_min": round(build_min, 2),
         "run_id": run_id,
         "deterministic": bool(args.deterministic),
+        "env": {
+            "python": platform.python_version(),
+            "numpy": np.__version__,
+            "machine": platform.machine(),
+            "system": platform.system(),
+        },
     }
     with open(out_dir / "config.json", "w") as f:
         json.dump(config, f, indent=2)
 
-    print(f"[train] done. run_id={run_id}  train_min={train_min:.1f}")
+    print(f"[build] done. run_id={run_id}  build_min={build_min:.1f}")
     print(str(out_dir))
+    if platform.machine() not in ("x86_64", "AMD64", "i386", "i686"):
+        print(
+            f"[build] NOTE: checkpoint built on {platform.system()}/"
+            f"{platform.machine()}. The paper's numbers were produced on "
+            "x86-64 Linux; rebuilding on a different CPU architecture can "
+            "yield visibly different metrics (see REPRODUCE.md, 'What is "
+            "deterministic, and what is platform-sensitive'). For numbers "
+            "that match the paper's tables, evaluate the released "
+            "checkpoints instead of rebuilding.")
 
 
 if __name__ == "__main__":

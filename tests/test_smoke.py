@@ -66,7 +66,7 @@ def main() -> int:
         patience=3,
         batch_size=16,
     )
-    imputer.fit(X_train, M_train, X_test, M_test)
+    imputer.build(X_train, M_train, X_test, M_test)
     X_hat = imputer.impute(X_test, M_input)
 
     mae = float(np.abs(X_hat[eval_mask] - X_test[eval_mask]).mean())
