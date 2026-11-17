@@ -43,8 +43,9 @@ Download the checkpoint archive from the GitHub release and unpack it under
         --run_dir checkpoints/dmhi/gas_home_seed7 \
         --block_size 20 --rate 0.9 --seed 7
 
-Expected output: `MAE=0.051499 / MSE=0.020727 / RMSE=0.143970 / MD=0.198470`
-(mask seed = seed + 2). Per-domain, per-seed expected values:
+Expected output on x86-64: `MAE=0.051789 / MSE=0.020789 / RMSE=0.144185 /
+MD=0.198525` (mask seed = seed + 2; arm64 numbers differ slightly, see
+`REPRODUCE.md`). Per-domain, per-seed expected values:
 `results/README.md`. Per-cell hyperparameters: `configs/`.
 
 ## Benchmark

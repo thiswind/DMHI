@@ -36,11 +36,12 @@ original submission).
 
 Notes:
 
-- `mimic` and `physionet2012` are DUA-gated domains: their arrays are **not**
-  in this repository. Re-process them from the credentialed sources with the
-  `newds_v2` protocol if you need the raw data; the released checkpoints
-  evaluate them once the processed arrays are in place under
-  `data/processed/`.
+- `mimic` and `physionet2012` are DUA-gated domains: their raw arrays are
+  **not** in this repository and their table cells require reprocessing
+  from credentialed sources (`data/DATA.md`). The release zip does include
+  their checkpoints (which embed only low-dimensional anchor coordinates,
+  never raw records) so the DMHI row is fully re-verifiable once the
+  arrays are in place.
 - All 12 domains were re-verified on x86-64 Linux (OpenBLAS / numpy 2.2.6):
   all 36 runs reproduce the four metrics **bit-for-bit**. A spot-check
   subset (mocap, 3 runs) is also bit-identical under the newest stack

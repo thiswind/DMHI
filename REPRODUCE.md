@@ -92,10 +92,11 @@ oversized domains (physionet2012, mimic, electricity) are handled in
 
 ## Level 2 — released checkpoints + baselines
 
-- **Checkpoints.** The released "Ours" checkpoints for all published runs
-  (407 MB uncompressed, 50 runs, 207 MB zip) are distributed as a release
-  archive (`dmhi-checkpoints-<version>.zip`, see GitHub *Releases*). The zip
-  stores the run directories flat (`<domain>_seed<N>/`), so unpack it into
+- **Checkpoints.** The released "Ours" checkpoints for the 12 paper-table
+  domains (213.6 MB zip, 36 runs: 12 domains x seeds {7, 42, 123}) are
+  distributed as a release archive (`dmhi-checkpoints-v0.2.0.zip`, see
+  GitHub *Releases*). The zip stores the run directories flat
+  (`<domain>_seed<N>/`) together with a `README.md`, so unpack it into
   `checkpoints/dmhi/`:
 
   ```bash
@@ -106,22 +107,23 @@ oversized domains (physionet2012, mimic, electricity) are handled in
   Then evaluate directly (no rebuilding):
 
   ```bash
-  python scripts/evaluate.py --run_dir checkpoints/dmhi/hydraulic_seed7 \
-      --block_size 20 --seed 7 --deterministic
+  python scripts/evaluate.py --run_dir checkpoints/dmhi/gas_home_seed7 \
+      --rate 0.9 --block_size 20 --seed 7
   ```
 
-  Each run directory carries the `config.json` written when the checkpoint
-  was constructed (hyperparameters exact; see `configs/README.md` for the
-  reconstruction caveat on non-primary domains). Reference value for the
-  released gas_home seed-7 checkpoint: `MAE=0.051499  MSE=0.020727
-  RMSE=0.143970  MD=0.198470` — reproducibly to six decimals within one
-  environment, matching the paper's reported gas_home cell
+  (Drop `--deterministic` unless torch is installed — it is an optional
+  strictness flag, not needed for exact reproduction.) Each run directory
+  carries the `config.json` written when the checkpoint was constructed
+  (hyperparameters exact; see `configs/README.md` for the reconstruction
+  caveat on non-primary domains) and a `metrics.json` sidecar computed at
+  the paper protocol (rho=0.9) on x86-64 — the reference value for
+  gas_home seed 7 is `MAE=0.051789  MSE=0.020789  RMSE=0.144185
+  MD=0.198525`, matching the paper's reported gas_home cell
   (0.051 / 0.020 / 0.143 / 0.197) at the table's three decimals.
-  **DUA note:** checkpoints pickle their anchor arrays, so any run built on
-  the DUA-restricted domains (`mimic`, `physionet2012`) must not be
-  redistributed — release archives must exclude those run directories;
-  rebuild them locally after obtaining the credentialed sources
-  (`data/DATA.md`).
+  **DUA note:** the `mimic` / `physionet2012` checkpoints embed only
+  low-dimensional anchor coordinates, never raw record arrays; if a data
+  holder objects, delete those two directories and rebuild locally after
+  obtaining the credentialed sources (`data/DATA.md`).
 
 - **Baselines.** `scripts/baselines/` runs classical and PyPOTS
   baselines (`run_classical.py`, `run_saits.py`, `run_timemixer.py`,
