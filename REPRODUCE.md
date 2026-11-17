@@ -120,10 +120,21 @@ oversized domains (physionet2012, mimic, electricity) are handled in
   gas_home seed 7 is `MAE=0.051789  MSE=0.020789  RMSE=0.144185
   MD=0.198525`, matching the paper's reported gas_home cell
   (0.051 / 0.020 / 0.143 / 0.197) at the table's three decimals.
-  **DUA note:** the `mimic` / `physionet2012` checkpoints embed only
-  low-dimensional anchor coordinates, never raw record arrays; if a data
-  holder objects, delete those two directories and rebuild locally after
-  obtaining the credentialed sources (`data/DATA.md`).
+  **DUA domains.** The raw arrays for `mimic` / `physionet2012` are not in
+  git; during peer review their *processed* arrays ship as a second
+  release asset `dmhi-dua-arrays-v0.2.0.zip` (14 MB) — unpack it under
+  `data/processed/` and every domain in the table becomes reproducible
+  with zero flags:
+
+  ```bash
+  unzip dmhi-dua-arrays-v0.2.0.zip -d data/processed/
+  python scripts/reproduce_table.py
+  ```
+
+  The script evaluates all 12 domains x 3 seeds at the paper protocol and
+  prints the complete DMHI row (per-run values + 3-seed means). Without
+  the DUA zip it still runs, auto-skipping the two gated domains with a
+  note. See `data/DATA.md` for the credentialed acquisition route.
 
 - **Baselines.** `scripts/baselines/` runs classical and PyPOTS
   baselines (`run_classical.py`, `run_saits.py`, `run_timemixer.py`,

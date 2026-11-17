@@ -45,7 +45,10 @@ Download the checkpoint archive from the GitHub release and unpack it under
 
 Expected output on x86-64: `MAE=0.051789 / MSE=0.020789 / RMSE=0.144185 /
 MD=0.198525` (mask seed = seed + 2; arm64 numbers differ slightly, see
-`REPRODUCE.md`). Per-domain, per-seed expected values:
+`REPRODUCE.md`). `--rate` defaults to the checkpoint's build protocol
+(config.json, e.g. 0.7 for some domains) — **always pass `--rate 0.9` for
+the paper protocol**, or use `scripts/reproduce_table.py` which sets it
+for you. Per-domain, per-seed expected values:
 `results/README.md`. Per-cell hyperparameters: `configs/`.
 
 ## Benchmark

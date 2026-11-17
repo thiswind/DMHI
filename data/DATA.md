@@ -84,15 +84,16 @@ the reason and the exact reader-side route:
 
 | domain | why not in git | how to obtain | then what |
 |---|---|---|---|
-| `physionet2012` | PhysioNet Health Data License / DUA **forbids redistribution** of derived record data | create a free credentialed account at [physionet.org](https://physionet.org/content/challenge-2012/), accept the DUA, download Set A/B | process to the (N,T,D) format with train-statistics z-scoring (protocol as in the paper); or request our processed copy for verification under the same DUA terms |
-| `mimic` | MIMIC-III access requires **credentialed** training and its DUA **forbids redistribution** | apply at [mimic.mit.edu](https://mimic.mit.edu/ivwww/mimic-iii/) (e.gCredentialing), download MIMIC-III Clinical Database | same processing protocol as above; we cannot hand out copies, DUA forbids it |
-| `electricity` | pure size: 215 MB would dominate the repository | shipped as a **release archive** alongside the trained checkpoints (see [REPRODUCE.md](../REPRODUCE.md)); used only by the long-stream scale study | unpack under `data/processed/electricity/` |
+| `physionet2012` | PhysioNet Health Data License / DUA restricts redistribution of derived record data | free credentialed account at [physionet.org](https://physionet.org/content/challenge-2012/), accept the DUA, download Set A/B; or take the review-stage processed copy from the `dmhi-dua-arrays-v0.2.0.zip` release asset (see below) | unpack into `data/processed/physionet2012/`; processing protocol: 48-step windows, train-statistics z-scoring |
+| `mimic` | MIMIC-III DUA restricts redistribution (credentialed access required) | apply at [mimic.mit.edu](https://mimic.mit.edu/), download MIMIC-III Clinical Database; or take the review-stage processed copy from the same zip | unpack into `data/processed/mimic/`; same protocol |
 
-We deliberately do not ship even "derived" versions of the DUA datasets:
-publishing model outputs that leak record-level values would violate the
-agreements. If you need verification on these domains and hold the
-credentials yourself, open an issue and we will help you run the pipeline on
-your side.
+**Review-stage note on the DUA domains.** During peer review we distribute
+the *processed* arrays (z-scored windows — no direct record values) and
+the fitted checkpoints (which store only low-dimensional anchor
+coordinates) as release assets, so every table cell is reproducible from
+the repository alone. Should a data holder object, we will withdraw the
+array archive on request; the credentialed route above remains the
+authoritative path.
 
 ## Sample data
 
