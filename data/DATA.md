@@ -77,15 +77,13 @@ python scripts/build_swiss_trajectory.py
 The in-repo arrays and the rebuild scripts produce the same splits; when in
 doubt, trust the shipped arrays (they are the ones behind the paper tables).
 
-## Domains not in the repository, and how to get them
-
-The three below are **not redistributed here on purpose**. For each we state
-the reason and the exact reader-side route:
+## Domains not in git, and how to get them
 
 | domain | why not in git | how to obtain | then what |
 |---|---|---|---|
 | `physionet2012` | PhysioNet Health Data License / DUA restricts redistribution of derived record data | free credentialed account at [physionet.org](https://physionet.org/content/challenge-2012/), accept the DUA, download Set A/B; or take the review-stage processed copy from the `dmhi-dua-arrays-v0.2.0.zip` release asset (see below) | unpack into `data/processed/physionet2012/`; processing protocol: 48-step windows, train-statistics z-scoring |
 | `mimic` | MIMIC-III DUA restricts redistribution (credentialed access required) | apply at [mimic.mit.edu](https://mimic.mit.edu/), download MIMIC-III Clinical Database; or take the review-stage processed copy from the same zip | unpack into `data/processed/mimic/`; same protocol |
+| `electricity` | pure size: 215 MB would dominate the repository | not redistributed; used only by the long-stream scale study (not a paper table) | — |
 
 **Review-stage note on the DUA domains.** During peer review we distribute
 the *processed* arrays (z-scored windows — no direct record values) and

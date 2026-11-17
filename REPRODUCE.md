@@ -86,9 +86,8 @@ released checkpoints (Level 2), or rebuild on x86-64 Linux.
 
 To target a specific reported cell, take its hyperparameters from
 `configs/<domain>_seed<N>.json` (see `configs/README.md`) and pass them to
-`build_checkpoint.py` (they map 1:1 to CLI flags). The three DUA-restricted /
-oversized domains (physionet2012, mimic, electricity) are handled in
-`data/DATA.md` § "Domains not in the repository".
+`build_checkpoint.py` (they map 1:1 to CLI flags). The two DUA-gated
+domains (physionet2012, mimic) are covered in `data/DATA.md`.
 
 ## Level 2 — released checkpoints + baselines
 
@@ -165,8 +164,8 @@ oversized domains (physionet2012, mimic, electricity) are handled in
 - **Determinism:** given checkpoint and mask, imputation is deterministic on
   CPU — no GPU required at inference; six-decimal reproduction within one
   environment, `1e-3`-scale agreement across different BLAS backends.
-- **Data honesty:** ten domains are verifiable with zero external access
-  (the paper's twelve minus the two DUA-gated ICU streams); for those two we
-  explain in `data/DATA.md` exactly why we cannot hand you the arrays and how
-  to obtain them yourself; the oversized `electricity` stream (scale study,
-  not a paper table) ships as a release archive instead of bloating git.
+- **Data honesty:** ten domains are verifiable with zero external access;
+  the two DUA-gated ICU streams ship as a review-stage array zip (see
+  Level 2) with the credentialed acquisition route in `data/DATA.md`;
+  the oversized `electricity` stream (scale study, not a paper table)
+  stays out of git by size policy.
