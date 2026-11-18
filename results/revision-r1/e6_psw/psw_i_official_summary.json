@@ -1,0 +1,138 @@
+{
+ "protocol": "PSW-I official repo rerun (Wang et al. ICLR 2025, PSW for Imputation), 12 domains x 3 seeds {7,42,123}, block20 rho=0.9",
+ "source_script": "scripts/e6_psw_official.py",
+ "domains": {
+  "air_quality_italy": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.5623,
+   "official_scaled_mae_3seed": 0.6959,
+   "train_min_per_seed": [
+    0.63,
+    0.47,
+    0.99
+   ],
+   "curve_converged": true
+  },
+  "breizh_rs": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.8569,
+   "official_scaled_mae_3seed": 0.9156,
+   "train_min_per_seed": [
+    2.37,
+    2.14,
+    2.49
+   ],
+   "curve_converged": true
+  },
+  "delta_robot": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.4826,
+   "official_scaled_mae_3seed": 0.5247,
+   "train_min_per_seed": [
+    1.26,
+    0.58,
+    1.57
+   ],
+   "curve_converged": true
+  },
+  "gait_uci": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.2633,
+   "official_scaled_mae_3seed": 0.2754,
+   "train_min_per_seed": [
+    0.41,
+    1.66,
+    1.72
+   ],
+   "curve_converged": true
+  },
+  "gas_home": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.1736,
+   "official_scaled_mae_3seed": 0.228,
+   "train_min_per_seed": [
+    0.2,
+    0.19,
+    0.2
+   ],
+   "curve_converged": true
+  },
+  "kuka": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.2928,
+   "official_scaled_mae_3seed": 0.3151,
+   "train_min_per_seed": [
+    0.21,
+    0.25,
+    0.24
+   ],
+   "curve_converged": true
+  },
+  "mhealth": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.2847,
+   "official_scaled_mae_3seed": 0.2965,
+   "train_min_per_seed": [
+    0.33,
+    0.27,
+    0.25
+   ],
+   "curve_converged": true
+  },
+  "mimic": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.1921,
+   "official_scaled_mae_3seed": 0.3957,
+   "train_min_per_seed": [
+    0.77,
+    0.54,
+    0.52
+   ],
+   "curve_converged": true
+  },
+  "mocap_karate": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.381,
+   "official_scaled_mae_3seed": 0.3735,
+   "train_min_per_seed": [
+    0.42,
+    0.4,
+    0.42
+   ],
+   "curve_converged": true
+  },
+  "nanodrone": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.2211,
+   "official_scaled_mae_3seed": 0.1909,
+   "train_min_per_seed": [
+    0.27,
+    0.23,
+    0.25
+   ],
+   "curve_converged": true
+  },
+  "physionet2012": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.6664,
+   "official_scaled_mae_3seed": 0.4796,
+   "train_min_per_seed": [
+    20.77,
+    20.63,
+    20.27
+   ],
+   "curve_converged": true
+  },
+  "solo12": {
+   "n_seeds": 3,
+   "paper_protocol_mae_3seed": 0.4105,
+   "official_scaled_mae_3seed": 0.418,
+   "train_min_per_seed": [
+    0.3,
+    0.29,
+    0.27
+   ],
+   "curve_converged": true
+  }
+ }
+}

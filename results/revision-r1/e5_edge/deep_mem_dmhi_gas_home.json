@@ -1,0 +1,13 @@
+{
+ "per_sample_ms": 14.57,
+ "latency_ms_median": 14.58,
+ "n_timed": 20,
+ "rss_peak_mb": 606.5,
+ "versions": "torch-free (numpy only)",
+ "method": "dmhi",
+ "dataset": "gas_home",
+ "seed": 7,
+ "rate": 0.9,
+ "block": 20,
+ "protocol": "peak RSS = getrusage maxrss at worker exit (import+train+inference); latency = 3 warm-up + N timed single-sample calls; mask = apply_block_missing(block=20, rate=0.9; train seed=7, val seed=8, test seed=9); CPU only, x86-64 server"
+}

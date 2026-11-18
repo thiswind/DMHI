@@ -1,0 +1,59 @@
+{
+ "domain": "delta_robot",
+ "seed": 7,
+ "rate": 0.9,
+ "n_test": 30,
+ "reps": 4,
+ "device": "Raspberry Pi 3 Model B+",
+ "os": "Debian 13 trixie aarch64",
+ "threads": 4,
+ "methods": {
+  "DMHI": {
+   "method": "DMHI",
+   "N": 30,
+   "T": 100,
+   "D": 6,
+   "build_s": 24.03,
+   "torch_in_worker": false,
+   "n_latency_samples": 120,
+   "latency_ms_median": 266.48,
+   "latency_ms_p90": 270.72,
+   "latency_ms_mean": 235.21,
+   "cpu_s": 54.5,
+   "wall_s": 28.23,
+   "peak_rss_mb": 60.2,
+   "energy_mj_per_sample_est": 363.3,
+   "energy_model": "E=(P_full-P_idle)*cpu_s/4; P_idle=1.9W, P_full=5.1W (Pi 3B+ board-input, pidramble stress pair; power-model estimate, no external meter)"
+  },
+  "Linear": {
+   "method": "Linear",
+   "N": 30,
+   "T": 100,
+   "D": 6,
+   "n_latency_samples": 120,
+   "latency_ms_median": 0.74,
+   "latency_ms_p90": 0.77,
+   "latency_ms_mean": 0.75,
+   "cpu_s": 0.73,
+   "wall_s": 0.09,
+   "peak_rss_mb": 32.2,
+   "energy_mj_per_sample_est": 4.9,
+   "energy_model": "E=(P_full-P_idle)*cpu_s/4; P_idle=1.9W, P_full=5.1W (Pi 3B+ board-input, pidramble stress pair; power-model estimate, no external meter)"
+  },
+  "Mean": {
+   "method": "Mean",
+   "N": 30,
+   "T": 100,
+   "D": 6,
+   "n_latency_samples": 120,
+   "latency_ms_median": 0.17,
+   "latency_ms_p90": 0.18,
+   "latency_ms_mean": 0.17,
+   "cpu_s": 0.66,
+   "wall_s": 0.02,
+   "peak_rss_mb": 32.2,
+   "energy_mj_per_sample_est": 4.4,
+   "energy_model": "E=(P_full-P_idle)*cpu_s/4; P_idle=1.9W, P_full=5.1W (Pi 3B+ board-input, pidramble stress pair; power-model estimate, no external meter)"
+  }
+ }
+}

@@ -18,6 +18,8 @@ checkpoints/
 runs/
 results/*
 !results/README.md
+!results/revision-r1/
+!results/revision-r1/**
 scripts/**/logs/
 *.log
 
