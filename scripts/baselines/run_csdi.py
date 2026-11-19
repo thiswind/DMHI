@@ -53,7 +53,8 @@ def _load_csdi_config(csdi_repo: str, missing_rate: float) -> dict:
 
 
 def run_one(dataset: str, missing_rate: float, missing_pattern: str,
-            gpu: int, out_dir: str, seed: int = 42, smoke: bool = False) -> dict:
+            gpu: int, out_dir: str, seed: int = 42, smoke: bool = False,
+            extra_test_masks=None) -> dict:
     out_dir = pathlib.Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -159,6 +160,34 @@ def run_one(dataset: str, missing_rate: float, missing_pattern: str,
         "n_params_M": round(n_params / 1e6, 3),
         **metrics,
     }
+
+    # E10 hook: re-evaluate the fitted CSDI model under externally supplied
+    # test masks (e7 natural protocols). Each mask rebuilds a test dataloader
+    # and runs the official evaluate() into its own folder, then we read the
+    # pk back. Mirrors deployment robustness: trained model meets a different
+    # failure pattern at test time.
+    if extra_test_masks:
+        results["extra_masks"] = {}
+        for pname, hide in extra_test_masks.items():
+            folder2 = foldername + f"_e10_{pname}"
+            pathlib.Path(folder2).mkdir(parents=True, exist_ok=True)
+            loader2 = get_our_dataloader(X_test, M_test, hide,
+                                         batch_size=batch_size, shuffle=False)
+            evaluate(model, loader2, nsample=nsample, scaler=1,
+                     foldername=folder2)
+            pk2 = pathlib.Path(folder2) / f"generated_outputs_nsample{nsample}.pk"
+            with open(pk2, "rb") as f:
+                data2 = pickle.load(f)
+            s2 = data2[0]
+            if isinstance(s2, torch.Tensor):
+                s2 = s2.detach().cpu().numpy()
+            Xh2 = s2.mean(axis=1)
+            if Xh2.shape != X_test.shape:
+                Xh2 = Xh2.reshape(X_test.shape)
+            m2 = compute_metrics(Xh2, X_test, hide)
+            results["extra_masks"][pname] = m2
+            np.save(out_dir / f"csdi_{dataset}_e10_{pname}_seed{seed}_imputed.npy",
+                    Xh2.astype(np.float32))
 
     metrics_name = metrics_filename("csdi", dataset, missing_rate, missing_pattern)
     save_results(results, str(out_dir / metrics_name))
