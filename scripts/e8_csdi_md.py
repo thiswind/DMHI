@@ -90,7 +90,6 @@ def main():
     args = ap.parse_args()
 
     import numpy as np
-    from run_csdi import run_one  # noqa: F401  (documents the adapter reuse)
     import run_csdi
     from common import (load_dataset, apply_block_missing, make_input_mask,
                         compute_metrics, BLOCK_LENS)
