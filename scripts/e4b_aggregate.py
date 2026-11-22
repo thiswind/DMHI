@@ -117,8 +117,14 @@ def main():
             ax.grid(True, lw=0.3, alpha=0.4)
             ax.tick_params(length=2.5, width=0.5)
         axes[0].set_ylabel("error (lower is better)")
-        axes[-1].legend(loc="best", frameon=False, ncol=1)
+        # Legend OUTSIDE the data area: dedicated row beneath the subplots,
+        # horizontally centered, small font, single-row (4 entries fit).
+        handles, labels_ = axes[-1].get_legend_handles_labels()
+        fig.legend(handles, labels_, loc="lower center", ncol=len(METRICS),
+                   frameon=False, fontsize=7, columnspacing=1.6,
+                   handletextpad=0.4, bbox_to_anchor=(0.5, 0.0))
         fig.tight_layout(pad=0.4)
+        fig.subplots_adjust(bottom=0.30)  # reserve room for the outside legend
         fig_path = os.path.join(OUT_DIR, f"e4_sensitivity_{param}.pdf")
         fig.savefig(fig_path)
         plt.close(fig)
