@@ -62,13 +62,16 @@ claims must not be conflated:
 1. *Inference is deterministic and portable.* Given a checkpoint and a mask,
    imputation is deterministic; re-evaluating the same released checkpoint
    reproduces the paper's table numbers bit-for-bit on x86-64. Verified
-   on Linux (all 36 runs, OpenBLAS / numpy 2.2.6) and on native Windows 11
-   (all 36 runs, Python 3.14 / numpy 2.4.3 / scipy 1.17.1 / scikit-learn
-   1.8.0); a Linux spot-check under scipy 1.16.3 / scikit-learn 1.9.0
-   also matches. On arm64 (Apple Silicon) the printed cells drift by at
-   most 0.003 absolute, up to 3 in the third decimal (measured: 15 of 48
-   cells on an M4 under numpy 2.5.5 / scipy 1.18.1 and identically under
-   numpy 2.2.6 / scipy 1.16.1; the drift count tracks the BLAS/LAPACK
+   on Linux for this archive (all 36 runs, OpenBLAS / numpy 2.2.6) and,
+   on the superseded v0.2.0 archive (whose 36 run values are identical
+   to this archive's), on native Windows 11 (all 36 runs, Python 3.14 /
+   numpy 2.4.3 / scipy 1.17.1 / scikit-learn 1.8.0) and in a Linux
+   spot-check under scipy 1.16.3 / scikit-learn 1.9.0 that also matches.
+   On arm64 (Apple Silicon) the printed cells drift by at most 0.003
+   absolute, up to 3 in the third decimal (measured on this archive: 14
+   of 48 cells on an M4 under numpy 2.5.5 / scipy 1.16.3; 15 of 48 on
+   the v0.2.0 archive under numpy 2.5.5 / scipy 1.18.1 and identically
+   under numpy 2.2.6 / scipy 1.16.1; the count tracks the BLAS/LAPACK
    build, not the package versions), with no change to any ranking or
    conclusion. No GPU is needed at inference.
 2. *Checkpoint construction is deterministic per machine but not portable
@@ -96,17 +99,19 @@ domains (physionet2012, mimic) are covered in `data/DATA.md`.
 ## Level 2 — released checkpoints + baselines
 
 - **Checkpoints.** The released "Ours" checkpoints for the 12 paper-table
-  domains (96 MB zip, 36 runs: 12 domains x seeds {7, 42, 123}) are
-  distributed as a release archive (`dmhi-checkpoints-v0.2.0.zip`, see
-  GitHub *Releases*). The zip stores the run directories flat
-  (`<domain>_seed<N>/`) together with a `README.md`, so unpack it into
-  `checkpoints/dmhi/`:
+  domains (36 runs: 12 domains x seeds {7, 42, 123}) are distributed as a
+  release archive (`dmhi-checkpoints-v0.3.0.zip`, see GitHub *Releases*).
+  They were rebuilt with the training-free `build()` of this release on the
+  x86-64 server and contain no learned weights; the previous archive
+  (`v0.2.0`) was produced by the retired training branch and is superseded.
+  The zip stores the run directories flat (`<domain>_seed<N>/`) together
+  with a `README.md`, so unpack it into `checkpoints/dmhi/`:
 
   ```bash
   mkdir -p checkpoints/dmhi
-  unzip dmhi-checkpoints-v0.2.0.zip -d checkpoints/dmhi
+  unzip dmhi-checkpoints-v0.3.0.zip -d checkpoints/dmhi
   # Windows PowerShell equivalent (no unzip on Windows):
-  #   tar -xf dmhi-checkpoints-v0.2.0.zip -C checkpoints/dmhi
+  #   tar -xf dmhi-checkpoints-v0.3.0.zip -C checkpoints/dmhi
   ```
 
   Then evaluate directly (no rebuilding):
@@ -116,24 +121,27 @@ domains (physionet2012, mimic) are covered in `data/DATA.md`.
       --rate 0.9 --block_size 20 --seed 7
   ```
 
-  (Drop `--deterministic` unless torch is installed; it is an optional
-  strictness flag, not needed for exact reproduction.) Each run directory
-  carries the `config.json` written when the checkpoint was constructed
-  (hyperparameters exact; see `configs/README.md` for the reconstruction
-  caveat on non-primary domains) and a `metrics.json` sidecar computed at
-  the paper protocol (rho=0.9) on x86-64; the reference value for
-  gas_home seed 7 is `MAE=0.051789  MSE=0.020789  RMSE=0.144185
+  (`--deterministic` pins the BLAS thread count and the hash seed; it is an
+  optional strictness flag, not needed for exact reproduction.) Each run
+  directory carries the `config.json` written when the checkpoint was
+  constructed (hyperparameters exact; see `configs/README.md` for the
+  reconstruction caveat on non-primary domains) and a `metrics.json` sidecar
+  computed at the paper protocol (rho=0.9) on x86-64; the reference value
+  for gas_home seed 7 is `MAE=0.051789  MSE=0.020789  RMSE=0.144185
   MD=0.198525`, matching the paper's reported gas_home cell
   (0.051 / 0.020 / 0.143 / 0.197) at the table's three decimals.
+  Evaluating a run overwrites its `metrics.json` with the values computed
+  on your machine (on arm64 they differ in the third decimal, see the
+  platform note); unpack the zip again to restore the x86-64 sidecars.
   **DUA domains.** The raw arrays for `mimic` / `physionet2012` are not in
   git; during peer review their *processed* arrays ship as a second
-  release asset `dmhi-dua-arrays-v0.2.0.zip` (14 MB): unpack it under
+  release asset `dmhi-dua-arrays-v0.3.0.zip` (14 MB): unpack it under
   `data/processed/` and every domain in the table becomes reproducible
   with zero flags:
 
   ```bash
-  unzip dmhi-dua-arrays-v0.2.0.zip -d data/processed/
-  # Windows: tar -xf dmhi-dua-arrays-v0.2.0.zip -C data/processed/
+  unzip dmhi-dua-arrays-v0.3.0.zip -d data/processed/
+  # Windows: tar -xf dmhi-dua-arrays-v0.3.0.zip -C data/processed/
   python scripts/reproduce_table.py
   ```
 
@@ -160,10 +168,29 @@ domains (physionet2012, mimic) are covered in `data/DATA.md`.
   learned weights and no data-driven stopping (no optimizer over model
   parameters, no validation early-stopping): Stage I combines closed-form
   spectral decomposition with a fixed-schedule deterministic landmark
-  refinement, and Stage II is solved in closed form.
-  `use_learned_metric=True` exists solely as an opt-in
-  ablation and requires torch. The public API is `build()` / `impute()`;
-  there is no `fit()` and no training entry point.
+  refinement, and Stage II is solved in closed form. The public API is
+  `build()` / `impute()`; there is no `fit()` and no training entry point.
+- **Audit of the retired trainable branches:** earlier repository snapshots
+  (release v0.2.0) carried a learned SPD metric network (Adam + cosine
+  schedule, up to 200 epochs with validation based early stopping) and an
+  optional learned decoder, and the v0.2.0 build pipeline trained the metric
+  network and stored its weights inside 45 of the 50 released checkpoints.
+  The imputation path of the paper never read that network: with the paper
+  configuration (Stage II operator MHB, scoped simplex weights) its output is
+  not consumed. The E1 ablation ran both arms, and all 36 runs give the same
+  MAE, MSE and RMSE with and without the learned metric
+  (`results/revision-r1/e1_metric_ablation/`); the build took 4.7–29.3×
+  longer with it. Both
+  branches, and every torch import in `src/dmhi`, have been removed in this
+  release so that the code matches the paper's zero-trained-parameters claim.
+  After the removal, the same 36 E1 runs and all 36 paper-table checkpoints
+  were rebuilt on the x86-64 server with the training-free `build()`; MAE,
+  MSE, RMSE and MD reproduce the stored values bit for bit
+  (`results/revision-r1/e1_metric_ablation/regression_r31/` and
+  `rebuild_r31_x86/`). Constructor arguments that configured the retired
+  branches (`use_learned_metric`, `ablation_use_decoder`, `epochs`, `lr`,
+  `decoder_*`, ...) are still accepted so that older scripts keep running,
+  but they are ignored and no longer written to `config.json`.
 - **Same-mask discipline:** for each cell every method derives the block mask
   from the same `(domain, block_size, seed)` arithmetic, so masks are
   byte-identical across methods. Mask-draw variability is about `1e-3` MAE,

@@ -1,10 +1,13 @@
 # Configurations
 
-One JSON file per reported paper cell, named `<domain>_seed<N>.json`. These
-are the exact hyperparameters behind every "Ours" number in the paper; each
-file mirrors the `config.json` written next to the corresponding checkpoint
-(`checkpoints/dmhi/<domain>_seed<N>/config.json`; the 12-domain table
-checkpoints ship in the release zip, see `../REPRODUCE.md`).
+One JSON file per run directory, named `<domain>_seed<N>.json`. Each file
+mirrors the `config.json` written next to the corresponding checkpoint
+under `checkpoints/dmhi/<domain>_seed<N>/`. The 36 checkpoints behind the
+12-domain tables of the paper (seeds 7/42/123) ship in the release zip and
+their per-run `config.json` is inside the zip; the files in this directory
+cover the release checkpoints and the broader evaluation campaign (ablations
+and scale studies, see `data/DATA.md`). A run's `config.json` is the
+authoritative record of its build parameters.
 
 ## Schema
 
@@ -18,12 +21,12 @@ checkpoints ship in the release zip, see `../REPRODUCE.md`).
 | `d` | latent chart dimension (Stage I output) |
 | `k` | graph k-NN size |
 | `k_clle` | number of landmarks for the CLLE embedding |
-| `epochs` / `lr` / `batch_size` / `patience` | Stage II fitting |
-| `lambda_F` / `lambda_smooth` | loss weights |
-| `train_min` | train-split normalization floor (optional, domain-specific) |
+| `epochs` / `lr` / `batch_size` / `patience` | deprecated, ignored: configured the retired Stage II training loop; kept so the per-cell schema stays stable (no learned parameters are fitted) |
+| `lambda_F` / `lambda_smooth` | deprecated, ignored: formerly Stage II loss weights |
+| `build_min` (`train_min` in older files) | wall-clock minutes of the deterministic checkpoint construction (no training) |
 | `run_id` | canonical run identifier (`<domain>_<pattern>bs<block>_<rate>_seed<N>`) |
 | `deterministic` | deterministic inference flag |
-| `reconstructed` | `true` when the config was recovered from the fitted checkpoint instead of written at training time (optional; hyperparameters are read from the fitted imputer and are exact; see `../REPRODUCE.md`) |
+| `reconstructed` | `true` when the config was recovered from the built checkpoint instead of written at build time (optional; hyperparameters are read from the built imputer and are exact; see `../REPRODUCE.md`) |
 
 ## Index
 

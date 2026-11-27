@@ -1,0 +1,92 @@
+{
+ "rows": [
+  {
+   "domain": "physionet2012",
+   "dmhi_mse_3seed": 0.41,
+   "best_baseline": "CSDI",
+   "baseline_mse": 0.669,
+   "reduction_pct": 38.7
+  },
+  {
+   "domain": "mimic",
+   "dmhi_mse_3seed": 0.101,
+   "best_baseline": "BRITS",
+   "baseline_mse": 0.247,
+   "reduction_pct": 59.1
+  },
+  {
+   "domain": "air_quality_italy",
+   "dmhi_mse_3seed": 0.0538,
+   "best_baseline": "CSDI",
+   "baseline_mse": 0.674,
+   "reduction_pct": 92.0
+  },
+  {
+   "domain": "gait_uci",
+   "dmhi_mse_3seed": 0.0536,
+   "best_baseline": "CSDI",
+   "baseline_mse": 0.06,
+   "reduction_pct": 10.6
+  },
+  {
+   "domain": "mocap_karate",
+   "dmhi_mse_3seed": 0.0261,
+   "best_baseline": "CSDI",
+   "baseline_mse": 0.307,
+   "reduction_pct": 91.5
+  },
+  {
+   "domain": "gas_home",
+   "dmhi_mse_3seed": 0.0203,
+   "best_baseline": "CSDI",
+   "baseline_mse": 0.131,
+   "reduction_pct": 84.5
+  },
+  {
+   "domain": "delta_robot",
+   "dmhi_mse_3seed": 0.2843,
+   "best_baseline": "SAITS",
+   "baseline_mse": 1.052,
+   "reduction_pct": 73.0
+  },
+  {
+   "domain": "kuka",
+   "dmhi_mse_3seed": 0.0831,
+   "best_baseline": "CSDI",
+   "baseline_mse": 0.109,
+   "reduction_pct": 23.8
+  },
+  {
+   "domain": "nanodrone",
+   "dmhi_mse_3seed": 0.1439,
+   "best_baseline": "CSDI",
+   "baseline_mse": 0.21,
+   "reduction_pct": 31.5
+  },
+  {
+   "domain": "mhealth",
+   "dmhi_mse_3seed": 0.3645,
+   "best_baseline": "CSDI",
+   "baseline_mse": 0.346,
+   "reduction_pct": -5.4
+  },
+  {
+   "domain": "breizh_rs",
+   "dmhi_mse_3seed": 0.308,
+   "best_baseline": "CSDI",
+   "baseline_mse": 0.834,
+   "reduction_pct": 63.1
+  },
+  {
+   "domain": "solo12",
+   "dmhi_mse_3seed": 0.0638,
+   "best_baseline": "SAITS",
+   "baseline_mse": 0.225,
+   "reduction_pct": 71.6
+  }
+ ],
+ "headline": {
+  "domain": "air_quality_italy",
+  "reduction_pct": 92.0
+ }
+}

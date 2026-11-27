@@ -15,13 +15,13 @@ import random
 import sys
 import time
 
-import numpy as np
+# --deterministic pins BLAS threads; it must be set before numpy is imported.
+_DETERMINISTIC = "--deterministic" in sys.argv
+if _DETERMINISTIC:
+    for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ[_v] = "1"
 
-try:  # torch is optional: needed only for the --deterministic flag and for
-    # checkpoints that carry a learned metric network (ablation only).
-    import torch
-except ImportError:
-    torch = None
+import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
 from dmhi.method.pipeline import RiemannianImputer
@@ -33,19 +33,8 @@ from dmhi.utils.eval_protocol import (manifold_deviation as _manifold_deviation,
 def set_seed(seed: int, deterministic: bool = False):
     random.seed(seed)
     np.random.seed(seed)
-    if torch is not None:
-        torch.manual_seed(seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(seed)
     if deterministic:
-        if torch is None:
-            raise RuntimeError("--deterministic requires torch (set_seed backend)")
         os.environ["PYTHONHASHSEED"] = str(seed)
-        os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
-        torch.use_deterministic_algorithms(True, warn_only=True)
-        torch.set_num_threads(1)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
 
 
 # ---------------------------------------------------------------------------
@@ -131,7 +120,10 @@ def main():
     dataset = cfg["dataset"]
     missing_rate = args.rate if args.rate is not None else cfg["missing_rate"]
     pattern = cfg["pattern"]
-    train_min = cfg.get("build_min", cfg.get("train_min", None))
+    # Wall-clock of the deterministic checkpoint construction (no training).
+    # `build_min` is the canonical key; `train_min` is read as a fallback for
+    # config.json files written by earlier releases.
+    build_min = cfg.get("build_min", cfg.get("train_min", None))
     run_seed = int(cfg.get("seed", args.seed))
     block_size = args.block_size if args.block_size is not None else cfg.get("block_size", 20)
     mask_seed = args.mask_seed if args.mask_seed is not None else run_seed + 2
@@ -187,9 +179,9 @@ def main():
         "MD": round(md_mean, 6),
         "n_obs_dims": int(len(_observed_dims(M_test))),
         "mask_seed": int(mask_seed),
-        "build_min": round(train_min, 2) if train_min is not None else None,
+        "build_min": round(build_min, 2) if build_min is not None else None,
         "infer_ms_per_sample": round(elapsed_ms, 3),
-        "deterministic_train": bool(cfg.get("deterministic", False)),
+        "deterministic_build": bool(cfg.get("deterministic", False)),
         "deterministic_eval": bool(args.deterministic),
     }
 

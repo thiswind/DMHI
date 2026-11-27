@@ -83,7 +83,8 @@ HPS = dict(
 
 def run_one(dataset: str, missing_rate: float, missing_pattern: str,
             gpu: int, out_dir: str, seed: int = 42,
-            smoke: bool = False) -> dict:
+            smoke: bool = False,
+            extra_test_masks=None) -> dict:
     out_dir = pathlib.Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -165,6 +166,26 @@ def run_one(dataset: str, missing_rate: float, missing_pattern: str,
         "note": "PyPOTS TimeMixer; eval mask is protocol-prescribed (block_* or mcar)",
         "wrapper_version": "v3.2_pypots_library",
     }
+
+    # E10 hook: re-impute under externally supplied test masks (e7 natural
+    # protocols); model already fitted, mirroring deployment robustness.
+    if extra_test_masks:
+        results["extra_masks"] = {}
+        for pname, hide in extra_test_masks.items():
+            X_nan2 = X_test.copy().astype(np.float32)
+            in_m = make_input_mask(M_test, hide)
+            X_nan2[in_m == 0] = np.nan
+            imp2 = model.impute(test_set={"X": X_nan2})
+            if isinstance(imp2, dict):
+                Xh2 = np.array(imp2.get("imputation", imp2.get("X", X_test)))
+            else:
+                Xh2 = np.array(imp2)
+            if Xh2.shape != X_test.shape:
+                Xh2 = Xh2.reshape(X_test.shape)
+            m2 = compute_metrics(Xh2, X_test, hide)
+            results["extra_masks"][pname] = m2
+            np.save(out_dir / f"timemixer_{dataset}_e10_{pname}_seed{seed}_imputed.npy",
+                    Xh2.astype(np.float32))
 
     metrics_name = metrics_filename("timemixer", dataset, missing_rate, missing_pattern)
     save_results(results, str(out_dir / metrics_name))

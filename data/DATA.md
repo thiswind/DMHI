@@ -81,7 +81,7 @@ doubt, trust the shipped arrays (they are the ones behind the paper tables).
 
 | domain | why not in git | how to obtain | then what |
 |---|---|---|---|
-| `physionet2012` | PhysioNet Health Data License / DUA restricts redistribution of derived record data | free credentialed account at [physionet.org](https://physionet.org/content/challenge-2012/), accept the DUA, download Set A/B; or take the review-stage processed copy from the `dmhi-dua-arrays-v0.2.0.zip` release asset (see below) | unpack into `data/processed/physionet2012/`; processing protocol: 48-step windows, train-statistics z-scoring |
+| `physionet2012` | PhysioNet Health Data License / DUA restricts redistribution of derived record data | free credentialed account at [physionet.org](https://physionet.org/content/challenge-2012/), accept the DUA, download Set A/B; or take the review-stage processed copy from the `dmhi-dua-arrays-v0.3.0.zip` release asset (see below) | unpack into `data/processed/physionet2012/`; processing protocol: 48-step windows, train-statistics z-scoring |
 | `mimic` | MIMIC-III DUA restricts redistribution (credentialed access required) | apply at [mimic.mit.edu](https://mimic.mit.edu/), download MIMIC-III Clinical Database; or take the review-stage processed copy from the same zip | unpack into `data/processed/mimic/`; same protocol |
 | `electricity` | pure size: 215 MB would dominate the repository | not redistributed; used only by the long-stream scale study (not a paper table) | — |
 

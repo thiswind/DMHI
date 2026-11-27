@@ -82,7 +82,7 @@ def worker(args):
         from dmhi.method.pipeline import RiemannianImputer
         X_train = np.load(f"data/processed/{ds}/X_train.npy").astype(np.float32)
         M_train = np.load(f"data/processed/{ds}/M_train.npy").astype(np.int8)
-        imp = RiemannianImputer(d=12, use_learned_metric=False)
+        imp = RiemannianImputer(d=12)
         t0 = time.perf_counter()
         imp.build(X_train, M_train)
         res["build_s"] = round(time.perf_counter() - t0, 2)

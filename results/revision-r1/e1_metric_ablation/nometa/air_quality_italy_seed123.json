@@ -1,0 +1,14 @@
+{
+  "arm": "nometa",
+  "dataset": "air_quality_italy",
+  "seed": 123,
+  "mae": 0.12292951345443726,
+  "mse": 0.07627550512552261,
+  "rmse": 0.27618020407973237,
+  "md": [
+    NaN,
+    NaN
+  ],
+  "fit_s": 1.21,
+  "infer_s": 0.3216
+}

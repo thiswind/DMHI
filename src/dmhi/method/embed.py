@@ -7,10 +7,16 @@ with observed/missing mask M (1=observed). The chart is built via:
 2. Time-stratified landmark selection.
 3. Time-window mask-aware k-NN graph on landmarks.
 4. Laplacian Eigenmaps (LE) initialisation for landmark embeddings.
-5. Nesterov gradient descent with cosine-annealing LR (from SUDE learning_s.py).
+5. Projected Nesterov descent on the landmark embedding with a fixed
+   cosine step-size schedule (from SUDE learning_s.py).
 6. CLLE lifting for non-landmark time steps.
 
-The optimizer and LR schedule are adapted from ZPGuiGroupWhu/sude sude_py/learning_s.py.
+Step 5 is a per-sequence deterministic solve of the Laplacian Eigenmaps
+objective: fixed initialisation (step 4), fixed iteration count and fixed
+step-size schedule, no validation data, no early stopping and no weights
+kept after the call. The output is a function of the input sequence alone;
+nothing is learned from a training set and no trained parameter exists.
+The step-size rule is adapted from ZPGuiGroupWhu/sude sude_py/learning_s.py.
 """
 import numpy as np
 from scipy.sparse import eye as speye
@@ -101,7 +107,7 @@ def _le_init(W_L: np.ndarray, d: int) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# Optimiser: Nesterov + cosine-annealing LR  (adapted from sude learning_s.py)
+# Step-size rule for the fixed-schedule Nesterov solve  (adapted from sude learning_s.py)
 # ---------------------------------------------------------------------------
 
 def _cosine_lr(epoch: int, max_epochs: int, alpha_max: float, alpha_min: float, warmup: int) -> float:

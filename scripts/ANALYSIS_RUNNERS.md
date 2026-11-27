@@ -21,7 +21,8 @@ Locked (not overwritten, paper SSOT unchanged):
 
 Not pulled (DENY / HOLD):
   e4d/e4f summary CSVs (stale vs paper SSOT)
-  ablation2|4 use_decoder logs
+  ablation2|4 decoder-arm logs (retired: the learned decoder branch was
+    removed from the code; the logs are historical and not reproducible)
   stage3_auto_loop / stage3_rewrite results
   exp5_ksens_multidomain.json (HOLD FAIL 2026-08-02)
 

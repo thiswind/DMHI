@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import pathlib
 from dataclasses import asdict, dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -96,8 +96,13 @@ def collect_hold_simplex_stats(
     G_field_n: np.ndarray | None,
     hold_ts: np.ndarray,
 ) -> tuple[float, float, float]:
-    """Mean entropy, max weight, G eig ratio on hold timesteps."""
-    from .utils import simplex_weights, simplex_weights_metric
+    """Mean entropy, max weight, G eig ratio on hold timesteps.
+
+    ``G_field_n`` is kept for signature compatibility and must be ``None``:
+    no learned metric exists in the training-free release, so the eigenvalue
+    ratio is identically 0.
+    """
+    from .utils import simplex_weights
 
     entropies: list[float] = []
     max_ws: list[float] = []
@@ -112,17 +117,7 @@ def collect_hold_simplex_stats(
         )
         nn_local = np.clip(nn_local, 0, len(id_L) - 1)
         Z_nn = Z_L[nn_local]
-        if G_field_n is not None:
-            G_t = G_field_n[t]
-            w = simplex_weights_metric(Z_nn, Z_prime[t], G_t)
-            eigs = np.linalg.eigvalsh(G_t)
-            eig_ratios.append(
-                float(
-                    np.log10(max(eigs.max(), 1e-12) / max(eigs.min(), 1e-12))
-                )
-            )
-        else:
-            w = simplex_weights(Z_nn, Z_prime[t])
+        w = simplex_weights(Z_nn, Z_prime[t])
         entropies.append(_entropy(w))
         max_ws.append(float(w.max()))
     er = float(np.mean(eig_ratios)) if eig_ratios else 0.0
