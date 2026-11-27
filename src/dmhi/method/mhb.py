@@ -7,7 +7,10 @@ Pipeline contract (mirrors `karcher_impute`):
 
 where
     Z_n    : (T, d) float32 latent trajectory from Stage I
-    G_net  : fitted SPDMetricNet (eval mode) — supplies r_t = lambda_min(G(z_t))
+    G_net  : unused, kept for API compatibility; always ``None`` in the
+             training-free release (the learned metric network that once
+             supplied reliability weights r_t = lambda_min(G(z_t)) was
+             removed, so R = I)
     I_miss : 1-D int array of missing time indices (M^* in the paper)
     A      : (T, T) symmetric non-negative affinity over the FULL trajectory
              (the Stage I mask-weighted time-window k-NN graph, eqs. (5)-(7);
@@ -123,25 +126,23 @@ def _mhb_basis_truncated(L_sym: np.ndarray, K_eff: int):
 def reliability_weights(Z: np.ndarray, G_net) -> np.ndarray:
     """Algorithm 1 lines 3-5: r_t = lambda_min(G(z_t; phi)) for every t.
 
+    Requires the learned metric network ``G_net`` that was removed from the
+    training-free release. Kept for API compatibility; it now raises so a
+    non-``None`` ``G_net`` cannot be passed silently. In the deployed path
+    ``G_net`` is ``None`` and the caller uses R = I.
+
     Args:
-        Z: (T, d) float32 latent trajectory.
-        G_net: fitted SPDMetricNet; forward (1, T, d) -> (1, T, d, d).
+        Z: (T, d) float32 latent trajectory (unused).
+        G_net: must be ``None``.
 
-    Returns:
-        r: (T,) float64, strictly positive (G = LL^T + lambda_geo*I is SPD).
-           Non-finite entries (defensive) are replaced by 1.0.
+    Raises:
+        NotImplementedError: always (the learned metric no longer exists).
     """
-    import torch
-
-    G_net.eval()
-    device = next(G_net.parameters()).device
-    with torch.no_grad():
-        Z_t = torch.from_numpy(Z.astype(np.float32)).unsqueeze(0).to(device)
-        G_field = G_net(Z_t)[0].cpu().numpy().astype(np.float64)  # (T, d, d)
-    G_field = 0.5 * (G_field + np.transpose(G_field, (0, 2, 1)))
-    r = np.linalg.eigvalsh(G_field)[:, 0]  # lambda_min per time step
-    r = np.where(np.isfinite(r) & (r > 0), r, 1.0)
-    return r
+    raise NotImplementedError(
+        "reliability_weights() needs the learned metric network, which was "
+        "removed from the training-free release. Pass G_net=None so the MHB "
+        "solver uses R = I (the deployed path)."
+    )
 
 
 def mhb_solve_coeffs(
@@ -262,7 +263,7 @@ def mhb_impute_hard(
 
     Args:
         Z: (T, d) float32 latent trajectory from Stage I.
-        G_net: fitted SPDMetricNet (reliability weights); None -> R = I.
+        G_net: unused, kept for API compatibility; must be ``None`` -> R = I.
         I_miss: 1-D int array of missing time indices.
         A: (T, T) full-trajectory affinity (Stage I graph, eqs. (5)-(7)).
         K: basis bandwidth (paper default 5).
@@ -321,6 +322,7 @@ def mhb_impute(
 
     mode='soft' (default): full-spectrum Laplacian-regularized extension on a
     latent kNN graph; mode='hard': legacy K-band MHB projection (Algorithm 1).
+    ``G_net`` is unused and always ``None`` (kept for API compatibility).
     """
     if str(mode).lower() == "hard":
         return mhb_impute_hard(Z, G_net, I_miss, A, K=K, gamma=gamma)

@@ -1,0 +1,14 @@
+{
+  "arm": "default",
+  "dataset": "air_quality_italy",
+  "seed": 42,
+  "mae": 0.1195998340845108,
+  "mse": 0.07010859996080399,
+  "rmse": 0.26478028620122757,
+  "md": [
+    NaN,
+    NaN
+  ],
+  "fit_s": 34.61,
+  "infer_s": 0.3197
+}

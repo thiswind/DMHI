@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Aggregate E1 A/B results: nometa (pure closed-form) vs default (metric net)."""
+"""Aggregate E1 A/B results: nometa (pure closed-form) vs default.
+
+Historical arm logs written before the learned-metric branch was removed
+(the two arms were bit-identical in 36/36 runs; see REPRODUCE.md). This
+script only reads the archived runs/e1_* metrics.json files.
+"""
 import json, glob, collections
 import numpy as np
 

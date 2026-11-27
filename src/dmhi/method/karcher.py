@@ -1,23 +1,24 @@
-"""Stage II: Karcher mean imputation in the learnable Riemannian metric.
+"""Stage II: Karcher mean imputation (legacy operator).
 
 For each missing time step t, initialise z_t as a Gaussian-weighted average
 of observed neighbours, then iterate natural-gradient steps under G(z_t)
 until convergence (Karcher mean fixed-point).
 
-All computation is NumPy; the metric net is called via get_metric() which
-handles the torch/MPS backend internally and returns numpy.
+This operator consumed a learned SPD metric field ``G_net`` in earlier
+releases. The learned-metric branch has been removed from the training-free
+release, so ``G_net`` is unused and must be ``None``; the ``G_net``
+parameter is kept only for API compatibility. The deployed Stage II is the
+closed-form manifold-harmonic / graph-spline operator in ``mhb.py``.
+All computation is NumPy.
 """
 import numpy as np
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import Callable, Optional
 
 from .utils import gaussian_weights
 
-if TYPE_CHECKING:
-    from .metric import SPDMetricNet
-
 
 # ---------------------------------------------------------------------------
-# Karcher diagnosticstage A)
+# Karcher diagnostics (Stage A)
 # Tracks call rate, skip rate (observed empty), and actual iteration steps.
 # Resetable per impute() call from pipeline.py.
 # ---------------------------------------------------------------------------
@@ -91,7 +92,7 @@ def _adaptive_eta(eta: float, G: np.ndarray) -> float:
 
 
 def _resolve_metric_g(
-    G_net: "SPDMetricNet",
+    G_net: Optional[object],
     z: np.ndarray,
     t: int,
     d: int,
@@ -101,9 +102,14 @@ def _resolve_metric_g(
     g_active_mask: Optional[np.ndarray],
     pullback_blend_epsilon: float,
     pullback_at_t: Optional[Callable[[int], np.ndarray]],
-    karcher_metric_mode: str = "learned",
+    karcher_metric_mode: str = "identity",
 ) -> np.ndarray:
-    """Metric for Karcher step, optional pullback blend (Phase 2.8)."""
+    """Metric for Karcher step, optional pullback blend (Phase 2.8).
+
+    ``G_net`` is unused and must be ``None`` (the learned-metric branch was
+    removed). Only the ``identity`` and ``pullback`` metric modes remain
+    reachable; the legacy ``learned`` mode raises.
+    """
     if g_active_mask is not None and not bool(g_active_mask[t]):
         return np.eye(d, dtype=np.float64)
     mode = str(karcher_metric_mode).lower()
@@ -118,17 +124,16 @@ def _resolve_metric_g(
             )
         G_pb = pullback_at_t(int(t)).astype(np.float64)
         return _postprocess_metric_g(G_pb, d, normalize_g, g_scale, eigen_clip)
-    G_learned = G_net.get_metric(z.astype(np.float32)).astype(np.float64)
-    eps = float(pullback_blend_epsilon)
-    if eps > 0.0 and pullback_at_t is not None:
-        G_pb = pullback_at_t(int(t)).astype(np.float64)
-        G_learned = (1.0 - eps) * G_learned + eps * G_pb
-    return _postprocess_metric_g(G_learned, d, normalize_g, g_scale, eigen_clip)
+    raise NotImplementedError(
+        "karcher_metric_mode='learned' requires the removed learned metric "
+        "network (G_net); the training-free release provides only "
+        "'identity' and 'pullback' modes, and the deployed Stage II is mhb_impute."
+    )
 
 
 def karcher_impute(
     Z: np.ndarray,
-    G_net: "SPDMetricNet",
+    G_net: Optional[object],
     I_miss: np.ndarray,
     k_time: int = 10,
     sigma: float = 3.0,
@@ -150,7 +155,7 @@ def karcher_impute(
     # Phase 2.8: G_use = (1-ε) G_net + ε G_pullback in Karcher only
     pullback_blend_epsilon: float = 0.0,
     pullback_at_t: Optional[Callable[[int], np.ndarray]] = None,
-    karcher_metric_mode: str = "learned",
+    karcher_metric_mode: str = "identity",
     # Phase 2.12: oracle blend Z_k toward Z_gt at hold
     z_hold_oracle_alpha: float = 0.0,
     z_oracle_Z_gt: Optional[np.ndarray] = None,
@@ -165,9 +170,10 @@ def karcher_impute(
 
     Args:
         Z: (T, d) float32 latent array.
-        G_net: fitted SPDMetricNet (in eval mode, on device).
+        G_net: unused, kept for API compatibility; must be ``None`` (the
+            learned metric network was removed from this release).
         I_miss: 1-D int array of time indices to impute.
-        Z_bank: (K, d) training latent bank for cross-subject neighbors.
+        Z_bank: (K, d) latent bank of the build data for cross-subject neighbors.
         cross_k: number of cross-subject neighbors (0 = disabled).
         cross_sigma: Gaussian bandwidth for cross-subject weights.
 

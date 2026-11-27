@@ -16,8 +16,9 @@ python scripts/evaluate.py --run_dir checkpoints/dmhi/<domain>_seed<seed> --rate
 
 over the three seeds, then averaged. These are the DMHI-row numbers reported
 in the revised manuscript; they come from the checkpoints in
-`dmhi-checkpoints-v0.2.0.zip` (Stage-II gate consistency fix relative to the
-original submission).
+`dmhi-checkpoints-v0.3.0.zip` (rebuilt with the training-free `build()` on
+x86-64; bit-identical to the v0.2.0 evaluation, which applied the Stage-II
+gate consistency fix relative to the original submission).
 
 | domain | MAE | MSE | RMSE | MD | seeds |
 |---|---|---|---|---|---|
@@ -48,9 +49,10 @@ Notes:
   scipy 1.16.3 / scikit-learn 1.9.0.
 - On Apple Silicon (arm64), the majority of the 48 table cells match
   exactly; the rest can differ by up to 0.003 absolute (up to 3 in the
-  third decimal; measured 15 of 48 cells, identical counts under
-  numpy 2.2.6 / scipy 1.16.1 and numpy 2.5.5 / scipy 1.18.1 on an M4;
-  the count tracks the BLAS/LAPACK build, not the package versions).
+  third decimal; measured 14 of 48 cells for this archive on an M4 under
+  numpy 2.5.5 / scipy 1.16.3, and 15 of 48 for the v0.2.0 archive under
+  numpy 2.2.6 / scipy 1.16.1 and numpy 2.5.5 / scipy 1.18.1 alike; the
+  count tracks the BLAS/LAPACK build, not the package versions).
   No bold/underline ranking or paper conclusion changes. A representative
   subset also runs on numpy 1.26.4 without torch installed (same arm64
   tolerances).
@@ -68,9 +70,11 @@ SIMD reduction order; see REPRODUCE.md). Verified on this repository:
   stack (`scipy 1.16.3 / scikit-learn 1.9.0`) reproduces the repository
   value exactly;
 - across x86-64 environments the numbers are bit-identical; on arm64 the
-  largest observed residual is 2.7e-3, which can shift a printed cell by up
+  largest observed residual is 2.6e-3 for this archive (2.7e-3 for the
+  v0.2.0 archive), which can shift a printed cell by up
   to 3 in the third decimal but never changes any ranking (each affected
-  cell's gap to the runner-up method is more than 10x the drift).
+  cell's gap to the runner-up method is more than 10x the drift; the
+  smallest ratio over the 48 cells is 18.6x for this archive).
 
 ## Table IV — inference speed
 

@@ -6,9 +6,7 @@ point deterministically constructs the checkpoint artifacts — Stage I
 manifold chart (closed-form spectral decomposition + fixed-schedule
 landmark refinement) and Stage II closed-form graph-Tikhonov operator — in
 seconds on a laptop CPU. No optimizer over model parameters, no validation
-early-stopping, and no learned weights are involved. (The learned-metric
-ablation, `use_learned_metric`, is opt-in only and requires torch; the
-paper's numbers never use it.)
+early-stopping, and no learned weights are involved.
 
 Data convention (produced by scripts/process_newds.py or fetched per
 data/DATA.md):
@@ -35,14 +33,12 @@ import random
 import sys
 import time
 
-import numpy as np
+# --deterministic pins BLAS threads; it must be set before numpy is imported.
+if "--deterministic" in sys.argv:
+    for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ[_v] = "1"
 
-try:  # torch is optional at module level: the default deployment path
-    # (use_learned_metric=False) never touches it; it is imported lazily
-    # below only when the opt-in learned-metric ablation is requested.
-    import torch
-except ImportError:
-    torch = None
+import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "src"))
@@ -69,40 +65,41 @@ def parse_args():
     p.add_argument("--k", type=int, default=10)
     p.add_argument("--k_clle", type=int, default=9)
     p.add_argument("--r_L", type=float, default=0.30)
-    p.add_argument("--epochs", type=int, default=200)
-    p.add_argument("--embed_epochs", type=int, default=200)
-    p.add_argument("--lr", type=float, default=1e-4)
-    p.add_argument("--lambda_F", type=float, default=1e-5)
-    p.add_argument("--lambda_smooth", type=float, default=1e-4)
-    p.add_argument("--batch_size", type=int, default=64)
-    p.add_argument("--patience", type=int, default=20)
+    # The following options configured the retired Stage II training loop.
+    # They are DEPRECATED: still accepted on the command line so that older
+    # sweep scripts keep running, but ignored by build() and not recorded in
+    # config.json.
+    p.add_argument("--epochs", type=int, default=200,
+                   help="(deprecated, ignored) formerly Stage II training epochs")
+    p.add_argument("--embed_epochs", type=int, default=200,
+                   help="Stage I landmark-refinement iteration count (fixed "
+                        "schedule, not gradient training of model weights)")
+    p.add_argument("--lr", type=float, default=1e-4,
+                   help="(deprecated, ignored) formerly Stage II learning rate")
+    p.add_argument("--lambda_F", type=float, default=1e-5,
+                   help="(deprecated, ignored) formerly Stage II loss weight")
+    p.add_argument("--lambda_smooth", type=float, default=1e-4,
+                   help="(deprecated, ignored) formerly Stage II loss weight")
+    p.add_argument("--batch_size", type=int, default=64,
+                   help="(deprecated, ignored) formerly Stage II batch size")
+    p.add_argument("--patience", type=int, default=20,
+                   help="(deprecated, ignored) formerly Stage II early-stop patience")
     p.add_argument("--stage2_method", default="mhb", choices=["mhb", "karcher"],
                    help="'mhb' = paper default (soft graph-spline); "
                         "'karcher' = ablation operator")
     p.add_argument("--spline_gamma", type=float, default=0.02,
                    help="Stage II soft-spline Tikhonov weight (E4 sweep knob)")
     p.add_argument("--deterministic", action="store_true",
-                   help="strict determinism: torch deterministic algorithms, "
-                        "single thread, deterministic cudnn. Slower (2-4x).")
+                   help="strict determinism: single BLAS thread and a fixed "
+                        "hash seed. Slower on large runs.")
     return p.parse_args()
 
 
 def set_seed(seed: int, deterministic: bool = False):
     random.seed(seed)
     np.random.seed(seed)
-    if torch is not None:
-        torch.manual_seed(seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(seed)
     if deterministic:
-        if torch is None:
-            raise RuntimeError("--deterministic requires torch")
         os.environ["PYTHONHASHSEED"] = str(seed)
-        os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
-        torch.use_deterministic_algorithms(True, warn_only=True)
-        torch.set_num_threads(1)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
 
 
 def _load(ddir: pathlib.Path, name: str, like=None):
@@ -134,12 +131,6 @@ def main():
         k_clle=args.k_clle,
         r_L=args.r_L,
         embed_epochs=args.embed_epochs,
-        epochs=args.epochs,
-        lr=args.lr,
-        lambda_F=args.lambda_F,
-        lambda_smooth=args.lambda_smooth,
-        batch_size=args.batch_size,
-        patience=args.patience,
         stage2_method=args.stage2_method,
         mhb_params={"mode": "soft", "spline_gamma": args.spline_gamma,
                     "k_latent": 10, "K": 5, "gamma": 1e-3},
@@ -164,13 +155,9 @@ def main():
         "d": d,
         "k": args.k,
         "k_clle": args.k_clle,
-        "epochs": args.epochs,
-        "lr": args.lr,
-        "lambda_F": args.lambda_F,
-        "lambda_smooth": args.lambda_smooth,
+        "embed_epochs": args.embed_epochs,
+        "stage2_method": args.stage2_method,
         "spline_gamma": args.spline_gamma,
-        "batch_size": args.batch_size,
-        "patience": args.patience,
         "build_min": round(build_min, 2),
         "run_id": run_id,
         "deterministic": bool(args.deterministic),

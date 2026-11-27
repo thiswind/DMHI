@@ -12,7 +12,7 @@ Usage (from the repository root, after unpacking the release zip):
         [--domains ...] [--rate 0.9] [--block_size 20]
 
 DUA note: `mimic` and `physionet2012` arrays are not in git but ship as a
-release asset (dmhi-dua-arrays-v0.2.0.zip) — unpack under data/processed/
+release asset (dmhi-dua-arrays-v0.3.0.zip) — unpack under data/processed/
 and this script evaluates all 12 domains with zero flags. Without it, the
 two gated domains are auto-skipped with a note (data/DATA.md has the
 credentialed acquisition route).

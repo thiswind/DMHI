@@ -20,6 +20,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.ticker import LogLocator, NullFormatter
 
 RUNS = os.environ.get("E4_RUNS", "runs/e4_stage2_fixed")  # post-gate-fix re-eval
 OUT_DIR = "results"
@@ -116,6 +117,17 @@ def main():
             ax.set_title(DS_LABEL[ds], fontsize=8)
             ax.grid(True, lw=0.3, alpha=0.4)
             ax.tick_params(length=2.5, width=0.5)
+            # Symlog y-axis: MSE ~ RMSE^2 spans an order of magnitude below
+            # MAE/RMSE/MD, so a linear axis collapses the three into the floor.
+            ax.set_yscale("symlog", linthresh=0.01)
+            ax.yaxis.set_major_locator(LogLocator(base=10, numticks=5))
+            ax.yaxis.set_minor_locator(LogLocator(base=10, subs=(2, 5), numticks=60))
+            # Headroom so the top data point never touches the frame edge.
+            ax.margins(y=0.08)
+            # Sparse, evenly-spaced decade ticks on log axes (avoids crowded tick band).
+            if spec["logx"]:
+                ax.xaxis.set_major_locator(LogLocator(base=10, numticks=4))
+                ax.xaxis.set_minor_formatter(NullFormatter())
         axes[0].set_ylabel("error (lower is better)")
         # Legend OUTSIDE the data area: dedicated row beneath the subplots,
         # horizontally centered, small font, single-row (4 entries fit).

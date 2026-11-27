@@ -33,14 +33,19 @@ if git rev-parse --verify "refs/tags/$TAG" >/dev/null 2>&1; then
   echo "tag $TAG already exists -> refuse"; exit 1
 fi
 
+MSG="v0.3.0-r1: revision release
+
+Squashed from $SRC_BRANCH @ $SRC_HEAD ($N_COMMITS commits).
+Contents: training-free surgery (learned SPD metric net, learned decoder
+and every torch import removed from src/dmhi; fit() replaced by build())
++ e7 natural-missingness + e9 incremental + results/revision-r1 archive
+(e1 metric ablation, regression and checkpoint-rebuild evidence)
++ e8/e10 gap-filler scripts + verification tooling."
+
 echo "== build squash on $TMP_BRANCH =="
 git checkout --orphan "$TMP_BRANCH"
 git add -A
-git commit -m "v0.3.0-r1: revision release
-
-Squashed from $SRC_BRANCH @ $SRC_HEAD ($N_COMMITS commits).
-Contents: e7 natural-missingness + e9 incremental + results/revision-r1
-archive + e8/e10 gap-filler scripts + verification tooling."
+git commit -m "$MSG"
 SQ="$(git rev-parse --short HEAD)"
 echo "squash commit: $SQ"
 git checkout "$SRC_BRANCH"
@@ -59,11 +64,7 @@ if [ "$MODE" != "--release" ]; then echo "unknown mode: $MODE"; exit 1; fi
 echo "== REAL RELEASE =="
 git checkout --orphan "$TMP_BRANCH"
 git add -A
-git commit -m "v0.3.0-r1: revision release
-
-Squashed from $SRC_BRANCH @ $SRC_HEAD ($N_COMMITS commits).
-Contents: e7 natural-missingness + e9 incremental + results/revision-r1
-archive + e8/e10 gap-filler scripts + verification tooling."
+git commit -m "$MSG"
 git branch -f main "$TMP_BRANCH"
 git checkout main
 git branch -D "$TMP_BRANCH"

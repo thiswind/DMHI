@@ -7,7 +7,7 @@ PCA + observed-entry freeze.
 import numpy as np
 from typing import Dict, Optional, Tuple
 
-from .utils import simplex_weights, simplex_weights_metric
+from .utils import simplex_weights
 
 
 def lift_non_landmark(X_samp: np.ndarray, x_i: np.ndarray) -> np.ndarray:
@@ -49,7 +49,7 @@ def clle_inverse(
         hat_X = M * X_obs + (1-M) * hat_X    (freeze observed entries)
 
     Args:
-        Z_prime: (T, d) updated latent codes after Karcher imputation.
+        Z_prime: (T, d) updated latent codes after Stage II repair.
         id_L: (n_L,) landmark time indices.
         clle_weights: {t: (global_nn_ids, weights)} from embedder.build().
             nn_ids are global time indices into id_L.
@@ -59,16 +59,19 @@ def clle_inverse(
         X_obs: (T, D) original observed data (may have NaN for missing).
         M: (T, D) binary mask, 1=observed 0=missing.
         G_field: optional (T, d, d) field of SPD metric tensors evaluated at
-            ``Z_prime``. When providedtage D fix for
-            break ③), non-landmark simplex weights are solved in the
-            G-Mahalanobis inner product so that the learned anisotropy
-            propagates into ``hat_X``. When ``None`` (e.g. ablation_no_metric
-            or G_net is None), falls back to the original Euclidean
-            ``simplex_weights``.
+            ``Z_prime``. Kept for API compatibility: no learned metric exists
+            in the training-free release, so ``G_field`` must be ``None``
+            (the only path; Euclidean ``simplex_weights`` is used). A
+            non-``None`` value raises.
 
     Returns:
         hat_X: (T, D) float32 imputed data with observed entries frozen.
     """
+    if G_field is not None:
+        raise NotImplementedError(
+            "clle_inverse(G_field=...) needs the learned metric, which was "
+            "removed from the training-free release; pass G_field=None."
+        )
     T, d = Z_prime.shape
     d_pca = X_pca.shape[1]
     id_L_set = set(id_L.tolist())
@@ -87,15 +90,9 @@ def clle_inverse(
         ], dtype=int)
         nn_local = np.clip(nn_local, 0, len(id_L) - 1)
         Z_nn = Z_L_prime[nn_local]              # (k, d) updated landmark latents
-        #tage D (fix break ③):
-        # When a per-timestep metric G_field[t] is available, solve the
-        # simplex-weight problem in the G-Mahalanobis inner product so the
-        # learned anisotropy actually steers reconstruction. Without G_field
-        # (e.g. ablation_no_metric), fall back to the Euclidean formula.
-        if G_field is not None:
-            w = simplex_weights_metric(Z_nn, Z_prime[t], G_field[t])
-        else:
-            w = simplex_weights(Z_nn, Z_prime[t])
+        # Euclidean simplex weights: G_field is None in the training-free
+        # release, so this is the only path.
+        w = simplex_weights(Z_nn, Z_prime[t])
         tilde_x[t] = w @ X_pca_L[nn_local]     # reconstruct in original PCA space
 
     # Inverse PCA: (T, d_pca) @ (d_pca, D) + (D,)

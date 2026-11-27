@@ -40,8 +40,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-torch = ["torch"]  # learned-metric ablations only; the deployed path is torch-free
-baselines = ["pypots>=1.0", "h5py", "pandas"]
+# torch is NOT a dependency of dmhi itself: the package is torch-free.
+# It is needed only by the deep-learning baseline scripts under scripts/baselines/
+# (SAITS/CSDI/BRITS via pypots, ImputeFormer, TimeMixer, PSW-I).
+baselines = ["torch", "pypots>=1.0", "h5py", "pandas"]
 dev = ["pytest"]
 
 [project.urls]

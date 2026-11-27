@@ -7,8 +7,11 @@ scikit-learn
 matplotlib
 tqdm
 
-# Optional: torch — only for the opt-in learned-metric ablations
-# (use_learned_metric=True) and the --deterministic eval flag. The default
+# Optional: torch — NOT a dependency of the dmhi package (src/dmhi is
+# torch-free and never imports it). It is needed only by the deep-learning
+# baseline scripts under scripts/baselines/ (SAITS/CSDI/BRITS via pypots,
+# ImputeFormer, TimeMixer, PSW-I) and by the optional --deterministic
+# strictness flag of build_checkpoint.py / evaluate.py. The default
 # build()/impute() path and scripts/evaluate.py run without it.
 # torch
 

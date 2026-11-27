@@ -10,15 +10,14 @@ no training phase and no learned weights. `build()` constructs the Stage I
 manifold chart by deterministic spectral decomposition plus a
 fixed-schedule landmark refinement (fixed iteration count, no validation
 early-stopping); Stage II solves the graph-Tikhonov system in closed form;
-inference runs on NumPy/SciPy/scikit-learn alone (torch is an optional
-dependency used only by the ablation-only learned-metric paths). Entry
+inference runs on NumPy/SciPy/scikit-learn alone (no torch). Entry
 point: `dmhi.method.pipeline.RiemannianImputer`.
 
 ## Requirements
 
 Python >= 3.10. CPU is sufficient for inference and the smoke test.
-Runtime dependencies for the default path: numpy, scipy, scikit-learn
-(torch only for the optional learned-metric ablations).
+Runtime dependencies: numpy, scipy, scikit-learn (torch is optional and
+used only by the baseline scripts under `scripts/baselines/`).
 
 ## Install
 
@@ -38,8 +37,8 @@ finiteness and observed-entry preservation. Runs in seconds.
 From a fresh clone:
 
     # from the GitHub release page, download two archives, then:
-    unzip dmhi-checkpoints-v0.2.0.zip -d checkpoints/dmhi
-    unzip dmhi-dua-arrays-v0.2.0.zip -d data/processed
+    unzip dmhi-checkpoints-v0.3.0.zip -d checkpoints/dmhi
+    unzip dmhi-dua-arrays-v0.3.0.zip -d data/processed
     python scripts/reproduce_table.py
 
 This evaluates all 12 domains x 3 seeds at the paper protocol
@@ -53,8 +52,8 @@ step differs on Windows (no `unzip` there; `tar` ships with Windows 10+):
 | Platform | Unpack with | Result |
 |---|---|---|
 | x86-64 Linux | `unzip` | all 48 cells bit-for-bit |
-| x86-64 native Windows (PowerShell) | `tar -xf <zip> -C <dir>` | all 48 cells bit-for-bit (tested: Win 11, Python 3.14, numpy 2.4.3) |
-| Apple Silicon macOS (arm64) | `unzip` | up to 15 of 48 printed cells differ by <=0.003 (3rd decimal); no ranking or conclusion changes |
+| x86-64 native Windows (PowerShell) | `tar -xf <zip> -C <dir>` | all 48 cells bit-for-bit (tested: Win 11, Python 3.14, numpy 2.4.3; on the superseded v0.2.0 archive, whose run values are identical to this archive) |
+| Apple Silicon macOS (arm64) | `unzip` | 14 of 48 printed cells differ by <=0.003 (at most 3 in the 3rd decimal); no ranking or conclusion changes |
 
 Dependencies are unpinned on purpose: a fresh `pip install -r
 requirements.txt` works on all three platforms; the validated version set
@@ -84,7 +83,7 @@ a single domain.
 
     src/dmhi/method/   the pipeline (importable package)
     scripts/           build_checkpoint / evaluate / reproduce_table / benchmark
-    configs/           one JSON per reported paper cell
+    configs/           build parameters of the released runs (see configs/README.md)
     data/processed/    10 of 12 paper domains in git; the other 2 ship in the
                        DUA release zip (see above)
     tests/             smoke, config, and data sanity tests
@@ -94,7 +93,7 @@ a single domain.
 
 10 of the 12 paper domains ship under `data/processed/`. The remaining
 two (`physionet2012`, `mimic`) are DUA-gated: their processed arrays ship
-in `dmhi-dua-arrays-v0.2.0.zip` on the release page for reviewer
+in `dmhi-dua-arrays-v0.3.0.zip` on the release page for reviewer
 convenience (withdrawable on request); the credentialed acquisition route
 is in `data/DATA.md`.
 

@@ -9,11 +9,10 @@ preserved. It runs in a few seconds on CPU.
     python tests/test_smoke.py        # direct run
     pytest tests/test_smoke.py        # via pytest
 
-If PyTorch or the method package is unavailable, the test skips cleanly with a
+If the method package is unavailable, the test skips cleanly with a
 non-failing message, so it never blocks an environment that only builds the
-paper.
+paper. No torch is required: the package is torch-free.
 """
-import os
 import pathlib
 import sys
 
@@ -37,10 +36,9 @@ def _load_sample() -> tuple[np.ndarray, np.ndarray]:
 def main() -> int:
     X, M = _load_sample()
     try:
-        import torch  # noqa: F401
         from dmhi.method.pipeline import RiemannianImputer
-    except Exception as exc:  # torch missing, etc.
-        print(f"[smoke] method/torch unavailable ({exc}); skipping run.")
+    except Exception as exc:  # method package missing, etc.
+        print(f"[smoke] method unavailable ({exc}); skipping run.")
         return 0
 
     n_windows, n_steps, _ = X.shape
@@ -57,27 +55,22 @@ def main() -> int:
         eval_mask[i, start : start + block, :] = True
         M_input[i, start : start + block, :] = 0
 
-    imputer = RiemannianImputer(
-        d=2,
-        k=6,
-        k_clle=5,
-        embed_epochs=30,
-        epochs=5,
-        patience=3,
-        batch_size=16,
-    )
+    imputer = RiemannianImputer(d=2, k=6, k_clle=5, embed_epochs=30)
     imputer.build(X_train, M_train, X_test, M_test)
     X_hat = imputer.impute(X_test, M_input)
 
     mae = float(np.abs(X_hat[eval_mask] - X_test[eval_mask]).mean())
     mean_fill = float(np.abs(X_test[eval_mask] - float(X_train.mean())).mean())
     observed_preserved = bool(np.allclose(X_hat[M_input == 1], X_test[M_input == 1], atol=1e-4))
+    torch_loaded = "torch" in sys.modules
 
     print(f"[smoke] held-out MAE={mae:.4f}  (mean-fill baseline ~{mean_fill:.4f})")
     print(f"[smoke] observed entries preserved: {observed_preserved}")
+    print(f"[smoke] torch imported by the pipeline: {torch_loaded}")
 
     assert np.isfinite(mae), "imputation MAE is not finite"
     assert observed_preserved, "observed entries were modified by impute()"
+    assert not torch_loaded, "dmhi.method.pipeline must not import torch"
     print("[smoke] PASS")
     return 0
 

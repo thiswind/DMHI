@@ -1,18 +1,18 @@
 """End-to-end Riemannian Geodesic Imputation pipeline.
 
 RiemannianImputer.build(X_train, M_train, X_val, M_val) → constructs Stage I
-+ II (closed-form structures; no training in the default deployment path,
-where ``use_learned_metric=False``).
++ II (closed-form structures; deterministic, no learned parameters).
 RiemannianImputer.impute(X, M) → runs Stage I + II + III and returns hat_X.
 
-Device priority: MPS → CUDA → CPU.
 All data must be float32. M must be int8 or bool (1=observed, 0=missing).
+The package is torch-free: NumPy/SciPy only, runs on CPU (e.g. Raspberry Pi
+edge nodes).
 Call `conda activate base` before running any Python script using this module.
 """
 from __future__ import annotations
 
 import numpy as np
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Optional
 import logging
 import os
 try:
@@ -21,18 +21,8 @@ try:
 except ImportError:
     _HAS_TQDM = False
 
-# Torch is an optional dependency: the default deployment path (build + impute
-# with use_learned_metric=False) is pure NumPy/SciPy closed form and runs on
-# machines without torch (e.g. Raspberry Pi edge nodes). Torch modules are
-# imported lazily inside the training / learned-metric code paths that need
-# them; the annotations below are typing-only.
-if TYPE_CHECKING:
-    import torch
-    import torch.nn as nn
-
 from .embed import MaskedManifoldEmbedder
 from .karcher import (
-    karcher_impute,
     reset_karcher_stats,
     get_karcher_stats,
     get_last_karcher_detail,
@@ -41,7 +31,6 @@ from .karcher import (
 from .clle import clle_inverse
 from .mhb import mhb_impute
 from .utils import build_time_window_graph
-from .synth_missing import sample_block_mask
 from .trace import (
     PipelineTracer,
     TraceRecord,
@@ -57,55 +46,6 @@ def _env_flag(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
 
 
-def get_device() -> "torch.device":
-    """Return MPS > CUDA > CPU (torch-only; imports torch inside)."""
-    import torch
-
-    if torch.backends.mps.is_available():
-        return torch.device("mps")
-    elif torch.cuda.is_available():
-        return torch.device("cuda")
-    return torch.device("cpu")
-
-
-def _torch_available() -> bool:
-    try:
-        import torch  # noqa: F401
-        return True
-    except ImportError:
-        return False
-
-
-def _decoder_mlp_factory():
-    """Build the DecoderMLP class lazily (torch is an optional dependency).
-
-    The decoder is an ablation-only Stage III (off by default); the class is
-    constructed here so module import stays torch-free.
-    """
-    import torch.nn as nn
-
-    class DecoderMLP(nn.Module):
-        """Small MLP that maps latent code z (d-dim) → ambient x (D-dim).
-
-        Trained on observed (z, x) pairs from training set after Stage II.
-        Replaces CLLE inverse in Stage III for better reconstruction on
-        heavily missing datasets like PhysioNet.
-        """
-
-        def __init__(self, d_in: int, d_out: int, hidden: int = 256):
-            super().__init__()
-            self.net = nn.Sequential(
-                nn.Linear(d_in, hidden), nn.LayerNorm(hidden), nn.GELU(),
-                nn.Linear(hidden, hidden), nn.LayerNorm(hidden), nn.GELU(),
-                nn.Linear(hidden, d_out),
-            )
-
-        def forward(self, z):
-            return self.net(z)
-
-    return DecoderMLP
-
-
 class RiemannianImputer:
     """Three-stage deterministic manifold-harmonic imputation (DMHI).
 
@@ -115,8 +55,10 @@ class RiemannianImputer:
     Stage III: CLLE symmetric inverse (``clle_inverse``) that freezes observed
                entries; no neural network on the inference path.
 
-    The retired Karcher-mean Stage II and the learned DecoderMLP Stage III remain
-    in the codebase as ablation/training paths only; they are off by default.
+    The method is training-free: no learned parameters are fitted or stored,
+    and the package does not depend on torch. Constructor parameters that
+    used to configure the retired learned-metric / decoder branches are kept
+    for backward compatibility with old ``config.json`` files but ignored.
     """
 
     def __init__(
@@ -132,16 +74,12 @@ class RiemannianImputer:
         lambda_I: float = 0.01,
         lambda_norm: float = 0.1,
         embed_epochs: int = 200,
-        # Stage II — metric net
+        # Stage II — metric net (DEPRECATED, ignored: retired learned-metric branch)
         n_head: int = 4,
         L_enc: int = 4,
         d_ff: int = 128,
         lambda_geo: float = 1e-3,
-        # Stage II — learned-metric ablation only (opt-in; default path is closed-form)
-        #tage E: lambda_F decreased from 1e-4 to 1e-5
-        # to give the new MLE-style loss_geo more room. The Frobenius penalty
-        # on G is now soft-floor (anti-explosion) rather than the dominant
-        # regulariser.
+        # Stage II — learned-metric ablation only (DEPRECATED, ignored)
         lambda_F: float = 1e-5,
         lambda_smooth: float = 1e-4,
         lr: float = 1e-4,
@@ -154,17 +92,18 @@ class RiemannianImputer:
         k_time: int = 10,
         sigma: float = 3.0,
         eta: float = 0.02,
-        # Stage III — DecoderMLP
+        # Stage III — learned decoder (DEPRECATED, ignored: retired branch)
         decoder_hidden: int = 256,
         decoder_epochs: int = 200,
         decoder_lr: float = 1e-3,
         decoder_patience: int = 30,
         # --- Ablation flags (do not set in production) ---
         ablation_no_embed: bool = False,
-        # IoTJ-R1 (Reviewer 3, comment 1): the deployed pipeline is pure
-        # closed-form. The learned SPD metric field is an OPT-IN research
-        # ablation (`use_learned_metric=True`); the previous release trained
-        # it by default, which contradicted the paper's training-free claim.
+        # DEPRECATED, ignored. IoTJ-R1 (Reviewer 3, comment 1): the deployed
+        # pipeline is pure closed-form; the learned SPD metric field and the
+        # learned decoder were removed from this release, so these flags no
+        # longer select any code path. Kept only so that old ``config.json``
+        # files and old scripts keep loading without error.
         use_learned_metric: bool = False,
         ablation_use_decoder: bool = False,
         ablation_no_mask_dist: bool = False,
@@ -188,17 +127,21 @@ class RiemannianImputer:
         karcher_use_clle_init: bool = True,
         # Phase 2.8: blend G_net with embedder pullback in Karcher (eval knob)
         pullback_blend_epsilon: float = 0.0,
-        # Phase 2.10: post-Karcher Z blend + metric mode oracle
+        # Phase 2.10: post-Karcher Z blend + metric mode ('identity' | 'pullback';
+        # the legacy 'learned' mode raises — the learned metric was removed)
         karcher_blend_lambda: float = 1.0,
-        karcher_metric_mode: str = "learned",
+        karcher_metric_mode: str = "identity",
         # REVISE-003 Stage C: Karcher consumer fixes (K1–K3)
         consumer_karcher_fix: bool = True,
         # REVISE-004 Stage II v2: block synth missing + in-loop Karcher
+        # (DEPRECATED, ignored: v2 was a training-loop profile)
         stage2_v2: bool = False,
         # CONTRAST-REALIGN Stage II: pullback on filtered native windows
+        # (DEPRECATED, ignored: realign was a training-loop profile)
         stage2_realign: bool = False,
         lambda_aniso: float = 0.01,
-        #: cross-subject Karcher neighbors (ablation only)
+        #: cross-subject Karcher neighbors (DEPRECATED, ignored: the bank was
+        #: queried under the removed learned metric; kept for config compat)
         ablation_cross_subject_knn: bool = False,
         cross_k: int = 20,
         cross_sigma: float = 3.0,
@@ -212,7 +155,7 @@ class RiemannianImputer:
         # /:
         # Stage II operator selection. 'mhb' (paper Algorithm 1) is the
         # canonical default since; 'karcher' is kept as the ablation
-        # operator. Inference-time choice — checkpoints trained with either
+        # operator. Inference-time choice — checkpoints built with either
         # value are interchangeable.
         stage2_method: str = "mhb",
         mhb_params: dict | None = None,
@@ -233,12 +176,12 @@ class RiemannianImputer:
         self.d_ff = d_ff
         self.lambda_geo = lambda_geo
 
-        self.lambda_F = lambda_F
-        self.lambda_smooth = lambda_smooth
-        self.lr = lr
-        self.epochs = epochs
-        self.patience = patience
-        self.batch_size = batch_size
+        # The training hyper-parameters of the retired branches (``lr``,
+        # ``epochs``, ``patience``, ``batch_size``, ``lambda_F``,
+        # ``lambda_smooth``, ``decoder_*``) are accepted by the constructor
+        # signature for compatibility with older scripts, but intentionally
+        # NOT stored: nothing in this release reads them.
+
         self.synth_miss_rate = synth_miss_rate
 
         self.N_max = N_max
@@ -246,18 +189,18 @@ class RiemannianImputer:
         self.sigma = sigma
         self.eta = eta
 
-        self.decoder_hidden = decoder_hidden
-        self.decoder_epochs = decoder_epochs
-        self.decoder_lr = decoder_lr
-        self.decoder_patience = decoder_patience
-
         self.ablation_no_embed = ablation_no_embed
-        # IoTJ-R1: default deployment is training-free (Reviewer 3, comment 1).
-        # `ablation_no_metric` is a derived alias kept for backward
-        # compatibility with old configs; `use_learned_metric=True` opts in
-        # to the research-stage learned metric field (off by default).
-        self.ablation_no_metric = not use_learned_metric
-        self.ablation_use_decoder = ablation_use_decoder
+        # IoTJ-R1: the deployed pipeline is training-free (Reviewer 3,
+        # comment 1). The learned-metric branch was removed from this
+        # release, so ``ablation_no_metric`` is now a constant: the
+        # Euclidean / G_net=None / G_field=None path is the only path.
+        # Kept as an attribute because karcher/mhb/clle consumers and old
+        # configs branch on it.
+        self.ablation_no_metric = True
+        # Deprecated (ignored): kept as attributes so that pickled
+        # checkpoints and old configs written by previous releases still load.
+        self.use_learned_metric = False
+        self.ablation_use_decoder = False
         self.ablation_no_mask_dist = ablation_no_mask_dist
         self.ablation_no_window_knn = ablation_no_window_knn
         self.ablation_no_hinge = ablation_no_hinge
@@ -275,10 +218,17 @@ class RiemannianImputer:
         self.karcher_use_clle_init = karcher_use_clle_init
         self.pullback_blend_epsilon = float(pullback_blend_epsilon)
         self.karcher_blend_lambda = float(karcher_blend_lambda)
-        self.karcher_metric_mode = str(karcher_metric_mode)
+        self.karcher_metric_mode = str(karcher_metric_mode).lower()
+        if self.karcher_metric_mode not in ("identity", "pullback"):
+            raise NotImplementedError(
+                f"karcher_metric_mode={karcher_metric_mode!r} is not available; "
+                "the learned metric network was removed. Use 'identity' or "
+                "'pullback'.")
         self.consumer_karcher_fix = consumer_karcher_fix
-        self.stage2_v2 = stage2_v2
-        self.stage2_realign = stage2_realign
+        # Deprecated (ignored): the v2 / realign Stage-II training profiles
+        # were removed; kept as plain attributes for old-checkpoint compat.
+        self.stage2_v2 = False
+        self.stage2_realign = False
         self.lambda_aniso = lambda_aniso
         self.ablation_cross_subject_knn = ablation_cross_subject_knn
         self.cross_k = cross_k
@@ -298,66 +248,37 @@ class RiemannianImputer:
             "K": 5,
             "gamma": 1e-3,
         }
-        if (consumer_karcher_fix or stage2_v2 or stage2_realign) and eta >= 1.0:
-            self.eta = 0.1  # K1: smaller step when fix / v2 profile enabled
+        if consumer_karcher_fix and eta >= 1.0:
+            self.eta = 0.1  # K1: smaller step when fix profile enabled
 
-        self._val_history: list = []
         self._ablation_pca = None
 
         self._embedder: Optional[MaskedManifoldEmbedder] = None
-        self._metric_net: Optional[SPDMetricNet] = None
-        self._decoder: Optional[DecoderMLP] = None
-        self._device: Optional[torch.device] = None
+        # No learned components exist in this release. The attributes are
+        # kept (always None) so that external ``is not None`` checks on old
+        # checkpoints keep working.
+        self._metric_net = None
+        self._decoder = None
         self._tau: float = 1.0  # temporal hinge threshold from Stage I
         self._is_fitted: bool = False
         # K-NN ambient anchoring (stored after fit)
         self._Z_train: Optional[np.ndarray] = None   # (N, T, d)
         self._X_train: Optional[np.ndarray] = None   # (N, T, D)
         self._M_train: Optional[np.ndarray] = None   # (N, T, D)
-        self._obs_rate: float = 1.0                   # training observation rate
+        self._obs_rate: float = 1.0                   # observation rate of the build data
         self._latent_bank: Optional[np.ndarray] = None
         self._tracer: Optional[PipelineTracer] = None
         self._trace_held_block: Optional[np.ndarray] = None
         self._trace_x_gt: Optional[np.ndarray] = None
         self._trace_m_native: Optional[np.ndarray] = None
 
-    def _effective_cross_k(self) -> int:
-        """Cross-subject neighbors disabled when no metric or flag off."""
-        if self.ablation_no_metric or not self.ablation_cross_subject_knn:
-            return 0
-        return int(self.cross_k)
-
     def _needs_torch(self) -> bool:
-        """Whether this configuration's build/impute touches torch at all."""
-        return bool(self.ablation_use_decoder) or (
-            not self.ablation_no_metric
-            and _torch_available()
-        )
-
-    def _ensure_latent_bank(self) -> None:
-        """Build training latent bank for cross-subject Karcher (once per impute pass)."""
-        if self._latent_bank is not None:
-            return
-        if self._Z_train is None or self._M_train is None:
-            raise RuntimeError(
-                "_ensure_latent_bank requires _Z_train/_M_train; call build() or load a fitted imputer."
-            )
-        from .cross_neighbors import build_train_latent_bank
-
-        self._latent_bank = build_train_latent_bank(
-            self._Z_train,
-            self._M_train,
-            bank_max_points=self.bank_max_points,
-            seed=42,
-        )
-        print(
-            f"[crossNN] latent bank size={self._latent_bank.shape[0]} "
-            f"(max_points={self.bank_max_points})",
-            flush=True,
-        )
+        """Whether this configuration touches torch. Always False: the
+        package is torch-free (kept for backward compatibility)."""
+        return False
 
     # ------------------------------------------------------------------
-    # Build (closed-form construction; no training in the default path)
+    # Build (closed-form construction; no learned parameters)
     # ------------------------------------------------------------------
 
     def build(
@@ -369,35 +290,25 @@ class RiemannianImputer:
     ) -> "RiemannianImputer":
         """Construct Stage I and Stage II on a dataset.
 
-        In the default deployment path (``use_learned_metric=False``) this
-        computes deterministic structures only — no neural network and no
-        learned weights. Stage I chart construction combines closed-form
+        This computes deterministic structures only — no neural network and
+        no learned weights. Stage I chart construction combines closed-form
         spectral decomposition with a fixed-schedule deterministic landmark
         refinement (no validation early-stopping, no data-driven stopping);
-        Stage II solves the soft graph-Tikhonov system in closed form. The
-        learned-metric stage remains available as an opt-in ablation via
-        ``use_learned_metric=True``.
+        Stage II solves the soft graph-Tikhonov system in closed form.
 
         Args:
             X_train: (N, T, D) float32 training samples.
             M_train: (N, T, D) int8/bool mask (1=observed).
-            X_val:   (N_v, T, D) float32 validation samples (for early stop).
-            M_val:   (N_v, T, D) mask.
+            X_val:   (N_v, T, D) float32 validation samples (unused; kept
+                     for signature compatibility).
+            M_val:   (N_v, T, D) mask (unused).
 
         Returns:
             self
         """
         N, T, D = X_train.shape
-        if self.ablation_no_metric and not self._needs_torch():
-            # Torch-free deployment path (edge devices): no learned metric,
-            # no decoder → no device selection, no torch import.
-            device = None
-            self._device = None
-            logger.info("Device: cpu (torch-free closed-form path)")
-        else:
-            device = get_device()
-            self._device = device
-            logger.info(f"Device: {device}")
+        # Torch-free deployment path (edge devices): no device selection.
+        logger.info("Device: cpu (torch-free closed-form path)")
 
         # --- Stage I: embed a representative reference sample ---
         # Synthesise reference by averaging the top-K most-observed samples.
@@ -456,169 +367,23 @@ class RiemannianImputer:
         self._tau = float(np.median(steps)) if len(steps) > 0 else 1.0
         self._tau = max(self._tau, 1e-3)
 
-        # --- Stage II: train metric net (or skip if ablation_no_metric) ---
-        lambda_geo_eff = 0.0 if self.ablation_no_geo_reg else self.lambda_geo
+        # --- Stage II: closed-form graph-Tikhonov operator (no metric net) ---
+        # No learned metric, no torch import: Stage II is the closed-form
+        # soft graph-spline / MHB refinement solved at inference time by
+        # mhb_impute(); nothing here needs a neural network or a set of
+        # learned weights. Only the build latents/ambient/mask are stored for
+        # the Stage III k-NN anchor fallback.
+        # Stage II is a closed-form operator; there is no learned metric
+        # network and nothing to train.
+        self._metric_net = None
+        logger.info("  Stage II: closed-form operator only; nothing to train.")
 
-        if self.ablation_no_metric:
-            # Default deployment path: no learned metric, no torch import.
-            # Stage II stays the closed-form soft graph-Tikhonov refinement
-            # (mhb_impute); nothing below needs a neural network.
-            logger.info(
-                "  [no learned metric] Stage II remains closed-form "
-                "(soft graph-Tikhonov); skipping metric-net construction."
-            )
-            self._metric_net = None
-            metric_net = None
-        else:
-            import torch
-            import torch.nn as nn
-            from .metric import SPDMetricNet, diagnose_G_field
-            from .losses import (
-                loss_aniso, loss_geo, loss_geo_masked,
-                loss_reg, loss_smooth, loss_time,
-            )
-
-            if self.ablation_metric_backbone == "mlp":
-                from .metric import MLPMetricNet
-                metric_net = MLPMetricNet(
-                    d=d_actual, hidden=self.d_ff, n_layers=3, lambda_geo=lambda_geo_eff,
-                ).to(device)
-            elif self.ablation_metric_backbone == "lstm":
-                from .metric import LSTMMetricNet
-                metric_net = LSTMMetricNet(
-                    d=d_actual, hidden=self.d_ff // 2, n_layers=2, lambda_geo=lambda_geo_eff,
-                ).to(device)
-            else:
-                metric_net = SPDMetricNet(
-                    d=d_actual,
-                    n_head=self.n_head,
-                    n_layers=self.L_enc,
-                    d_ff=self.d_ff,
-                    lambda_geo=lambda_geo_eff,
-                ).to(device)
-            self._metric_net = metric_net
-
-        self._val_history = []
-
-        if self.ablation_no_metric:
-            logger.info("  [ablation_no_metric] Skipping Stage II training.")
-            self._metric_net = None
-        else:
-            optimiser = torch.optim.Adam(metric_net.parameters(), lr=self.lr)
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimiser, T_max=self.epochs, eta_min=self.lr * 0.1
-            )
-
-        # Pre-embed all training samples (needed for Stage III decoder even if no_metric)
+        # Pre-embed all training samples (stored for Stage III anchoring)
         logger.info("Embedding training samples for Stage II...")
         Z_train = self._embed_batch(X_train, M_train, desc="Embed train")   # (N, T, d)
 
-        Z_val = None
-        if X_val is not None and M_val is not None:
-            Z_val = self._embed_batch(X_val, M_val, desc="Embed val")
-
-        if not self.ablation_no_metric:
-            best_val_loss = float("inf")
-            no_improve = 0
-            tau_t = torch.tensor(self._tau, dtype=torch.float32)
-        else:
-            best_val_loss = None
-            no_improve = 0
-
-        logger.info(f"Stage II closed-form graph-Tikhonov operator ready "
-                    "(iter cap {0} unused: no optimizer in this path).".format(self.epochs))
-        epoch_iter = (
-            _tqdm(range(self.epochs), desc="Stage II", unit="ep", dynamic_ncols=True)
-            if _HAS_TQDM else range(self.epochs)
-        ) if not self.ablation_no_metric else []
-        for epoch in epoch_iter:
-            metric_net.train()
-            perm = np.random.permutation(N)
-            epoch_loss = 0.0
-            n_batches = 0
-
-            for b_start in range(0, N, self.batch_size):
-                idx = perm[b_start: b_start + self.batch_size]
-                Z_batch = torch.from_numpy(Z_train[idx]).to(device)  # (B, T, d)
-
-                if self.stage2_v2:
-                    batch_seed = int(epoch * 1_000_003 + b_start)
-                    Z_hat, miss_t = self._stage2_v2_forward_batch(
-                        metric_net, Z_batch, batch_seed
-                    )
-                    G = metric_net(Z_hat.detach())
-                    l_g = loss_geo_masked(Z_hat, Z_batch, G, miss_t)
-                    l_a = loss_aniso(G)
-                else:
-                    synth_mask = (
-                        torch.rand_like(Z_batch[:, :, 0]) > self.synth_miss_rate
-                    ).float().unsqueeze(-1)
-                    Z_obs = Z_batch * synth_mask
-                    Z_hat = Z_obs
-                    G = metric_net(Z_hat)
-                    l_g = loss_geo(Z_hat, Z_batch, G)
-                    l_a = Z_hat.new_tensor(0.0)
-
-                l_r = loss_reg(G)
-                l_s = loss_smooth(G)
-                tau_t_device = tau_t.to(Z_hat.device)
-                l_t = loss_time(Z_hat, tau_t_device.item())
-                total = (
-                    l_g
-                    + self.lambda_aniso * l_a
-                    + self.lambda_F * l_r
-                    + self.lambda_smooth * l_s
-                    + self.lambda_I * l_t
-                )
-
-                optimiser.zero_grad()
-                total.backward()
-                nn.utils.clip_grad_norm_(metric_net.parameters(), 1.0)
-                optimiser.step()
-
-                epoch_loss += total.item()
-                n_batches += 1
-
-            scheduler.step()
-            avg_loss = epoch_loss / max(n_batches, 1)
-
-            # Validation
-            if Z_val is not None:
-                val_loss = self._val_loss(metric_net, Z_val, device)
-                self._val_history.append(val_loss)
-                if val_loss < best_val_loss - 1e-6:
-                    best_val_loss = val_loss
-                    no_improve = 0
-                    self._best_state = {
-                        k: v.cpu().clone() for k, v in metric_net.state_dict().items()
-                    }
-                else:
-                    no_improve += 1
-                if _HAS_TQDM and hasattr(epoch_iter, 'set_postfix'):
-                    epoch_iter.set_postfix(
-                        train=f"{avg_loss:.3f}", val=f"{val_loss:.3f}",
-                        best=f"{best_val_loss:.3f}", patience=f"{no_improve}/{self.patience}"
-                    )
-                if no_improve >= self.patience:
-                    logger.info(f"Early stop at epoch {epoch+1} (val={val_loss:.4f} best={best_val_loss:.4f})")
-                    if _HAS_TQDM and hasattr(epoch_iter, 'close'):
-                        epoch_iter.close()
-                    break
-                if (epoch + 1) % 20 == 0:
-                    logger.info(f"Ep{epoch+1}: train={avg_loss:.4f} val={val_loss:.4f} best={best_val_loss:.4f} patience={no_improve}")
-            else:
-                if _HAS_TQDM and hasattr(epoch_iter, 'set_postfix'):
-                    epoch_iter.set_postfix(train=f"{avg_loss:.3f}")
-                if (epoch + 1) % 20 == 0:
-                    logger.info(f"Ep{epoch+1}: train={avg_loss:.4f}")
-
-        # Restore best weights if val was used
-        if not self.ablation_no_metric:
-            if Z_val is not None and hasattr(self, "_best_state"):
-                metric_net.load_state_dict({
-                    k: v.to(device) for k, v in self._best_state.items()
-                })
-            metric_net.eval()
+        logger.info("Stage II closed-form graph-Tikhonov operator ready "
+                    "(no optimizer in this path).")
 
         # Store training data for Stage III k-NN anchoring
         self._Z_train = Z_train           # (N, T, d)
@@ -629,444 +394,12 @@ class RiemannianImputer:
         # Sparse (obs ≤ 0.4): global k-NN (training anchors more reliable)
         self._obs_rate = float(M_train.mean())
 
-        # --- Stage III (optional): train DecoderMLP ---
-        if self.ablation_use_decoder:
-            logger.info("  [ablation_use_decoder] Fitting DecoderMLP for Stage III.")
-            d_in = Z_train.shape[-1]
-            d_out = X_train.shape[-1]
-            self._fit_decoder(Z_train, X_train, M_train, d_in, d_out, device)
-        else:
-            self._decoder = None
-
-        # ---tage A: G-field diagnostic ---
-        if self._metric_net is not None:
-            sample_n = min(8, Z_train.shape[0])
-            Z_sample_diag = torch.from_numpy(Z_train[:sample_n].astype(np.float32))
-            try:
-                G_diag = diagnose_G_field(self._metric_net, Z_sample_diag, device)
-                # Use print so Gate A verification is visible regardless of
-                # the caller's logging configuration.
-                print(f"[ABL-004 diagnostic] G diagnostic: {G_diag}", flush=True)
-                logger.info(f"G diagnostic: {G_diag}")
-            except Exception as e:
-                print(f"[ABL-004 diagnostic] G diagnostic failed: {e}", flush=True)
-                logger.warning(f"G diagnostic failed: {e}")
+        # No decoder: Stage III is always the CLLE inverse.
+        self._decoder = None
 
         self._is_fitted = True
         logger.info("Fitting complete.")
         return self
-
-    def retrain_stage2_v2(
-        self,
-        X_train: np.ndarray,
-        M_train: np.ndarray,
-        X_val: Optional[np.ndarray] = None,
-        M_val: Optional[np.ndarray] = None,
-    ) -> "RiemannianImputer":
-        """Re-train Stage II only (REVISE-004): frozen embedder, fresh metric, stage2_v2 loop."""
-        if self.ablation_no_embed:
-            raise RuntimeError("retrain_stage2_v2 requires manifold embedder (not ablation_no_embed).")
-        if self._embedder is None:
-            raise RuntimeError("retrain_stage2_v2: load a fitted imputer with embedder first.")
-        if self.ablation_no_metric:
-            raise RuntimeError("retrain_stage2_v2: ablation_no_metric must be False.")
-
-        self.stage2_v2 = True
-        N, T, D = X_train.shape
-        device = get_device()
-        self._device = device
-        d_actual = self._embedder.d
-        logger.info(
-            f"retrain_stage2_v2: N={N} d={d_actual} epochs={self.epochs} "
-            f"lambda_aniso={self.lambda_aniso}"
-        )
-
-        lambda_geo_eff = 0.0 if self.ablation_no_geo_reg else self.lambda_geo
-        import torch
-        import torch.nn as nn
-        from .metric import SPDMetricNet, diagnose_G_field
-        from .losses import (
-            loss_aniso, loss_geo, loss_geo_masked,
-            loss_reg, loss_smooth, loss_time,
-        )
-        if self.ablation_metric_backbone == "mlp":
-            from .metric import MLPMetricNet
-
-            metric_net = MLPMetricNet(
-                d=d_actual, hidden=self.d_ff, n_layers=3, lambda_geo=lambda_geo_eff,
-            ).to(device)
-        elif self.ablation_metric_backbone == "lstm":
-            from .metric import LSTMMetricNet
-
-            metric_net = LSTMMetricNet(
-                d=d_actual, hidden=self.d_ff // 2, n_layers=2, lambda_geo=lambda_geo_eff,
-            ).to(device)
-        else:
-            metric_net = SPDMetricNet(
-                d=d_actual,
-                n_head=self.n_head,
-                n_layers=self.L_enc,
-                d_ff=self.d_ff,
-                lambda_geo=lambda_geo_eff,
-            ).to(device)
-        self._metric_net = metric_net
-
-        optimiser = torch.optim.Adam(metric_net.parameters(), lr=self.lr)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimiser, T_max=self.epochs, eta_min=self.lr * 0.1
-        )
-
-        logger.info("Embedding training samples (frozen Stage I)...")
-        Z_train = self._embed_batch(X_train, M_train, desc="Embed train")
-        Z_val = None
-        if X_val is not None and M_val is not None:
-            Z_val = self._embed_batch(X_val, M_val, desc="Embed val")
-
-        best_val_loss = float("inf")
-        no_improve = 0
-        tau_t = torch.tensor(self._tau, dtype=torch.float32)
-        self._val_history = []
-
-        logger.info(f"Training Stage II v2 for up to {self.epochs} epochs...")
-        epoch_iter = (
-            _tqdm(range(self.epochs), desc="Stage II v2", unit="ep", dynamic_ncols=True)
-            if _HAS_TQDM
-            else range(self.epochs)
-        )
-        for epoch in epoch_iter:
-            metric_net.train()
-            perm = np.random.permutation(N)
-            epoch_loss = 0.0
-            n_batches = 0
-
-            for b_start in range(0, N, self.batch_size):
-                idx = perm[b_start : b_start + self.batch_size]
-                Z_batch = torch.from_numpy(Z_train[idx]).to(device)
-
-                batch_seed = int(epoch * 1_000_003 + b_start)
-                Z_hat, miss_t = self._stage2_v2_forward_batch(
-                    metric_net, Z_batch, batch_seed
-                )
-                G = metric_net(Z_hat.detach())
-                l_g = loss_geo_masked(Z_hat, Z_batch, G, miss_t)
-                l_a = loss_aniso(G)
-                l_r = loss_reg(G)
-                l_s = loss_smooth(G)
-                tau_t_device = tau_t.to(Z_hat.device)
-                l_t = loss_time(Z_hat, tau_t_device.item())
-                total = (
-                    l_g
-                    + self.lambda_aniso * l_a
-                    + self.lambda_F * l_r
-                    + self.lambda_smooth * l_s
-                    + self.lambda_I * l_t
-                )
-
-                optimiser.zero_grad()
-                total.backward()
-                nn.utils.clip_grad_norm_(metric_net.parameters(), 1.0)
-                optimiser.step()
-
-                epoch_loss += total.item()
-                n_batches += 1
-
-            scheduler.step()
-            avg_loss = epoch_loss / max(n_batches, 1)
-
-            if Z_val is not None:
-                val_loss = self._val_loss(metric_net, Z_val, device)
-                self._val_history.append(val_loss)
-                if val_loss < best_val_loss - 1e-6:
-                    best_val_loss = val_loss
-                    no_improve = 0
-                    self._best_state = {
-                        k: v.cpu().clone() for k, v in metric_net.state_dict().items()
-                    }
-                else:
-                    no_improve += 1
-                if _HAS_TQDM and hasattr(epoch_iter, "set_postfix"):
-                    epoch_iter.set_postfix(
-                        train=f"{avg_loss:.3f}",
-                        val=f"{val_loss:.3f}",
-                        best=f"{best_val_loss:.3f}",
-                        patience=f"{no_improve}/{self.patience}",
-                    )
-                if no_improve >= self.patience:
-                    logger.info(
-                        f"Early stop at epoch {epoch+1} "
-                        f"(val={val_loss:.4f} best={best_val_loss:.4f})"
-                    )
-                    if _HAS_TQDM and hasattr(epoch_iter, "close"):
-                        epoch_iter.close()
-                    break
-                if (epoch + 1) % 20 == 0:
-                    logger.info(
-                        f"Ep{epoch+1}: train={avg_loss:.4f} val={val_loss:.4f} "
-                        f"best={best_val_loss:.4f} patience={no_improve}"
-                    )
-            else:
-                if _HAS_TQDM and hasattr(epoch_iter, "set_postfix"):
-                    epoch_iter.set_postfix(train=f"{avg_loss:.3f}")
-                if (epoch + 1) % 20 == 0:
-                    logger.info(f"Ep{epoch+1}: train={avg_loss:.4f}")
-
-        if Z_val is not None and hasattr(self, "_best_state"):
-            metric_net.load_state_dict(
-                {k: v.to(device) for k, v in self._best_state.items()}
-            )
-        metric_net.eval()
-
-        self._Z_train = Z_train
-        self._X_train = X_train.astype(np.float32)
-        self._M_train = M_train.astype(np.int8)
-        self._obs_rate = float(M_train.mean())
-        self._latent_bank = None
-        if self._effective_cross_k() > 0:
-            self._ensure_latent_bank()
-
-        sample_n = min(8, Z_train.shape[0])
-        Z_sample_diag = torch.from_numpy(Z_train[:sample_n].astype(np.float32))
-        try:
-            G_diag = diagnose_G_field(self._metric_net, Z_sample_diag, device)
-            print(f"[stage2_v2 retrain] G diagnostic: {G_diag}", flush=True)
-        except Exception as e:
-            print(f"[stage2_v2 retrain] G diagnostic failed: {e}", flush=True)
-
-        self._is_fitted = True
-        logger.info("retrain_stage2_v2 complete.")
-        return self
-
-    def retrain_stage2_realign(
-        self,
-        X_train: np.ndarray,
-        M_train: np.ndarray,
-        X_val: Optional[np.ndarray] = None,
-        M_val: Optional[np.ndarray] = None,
-        realign_cfg: Optional[object] = None,
-    ) -> "RiemannianImputer":
-        """Re-train Stage II with embedder-pullback supervision (CONTRAST-REALIGN)."""
-        from .stage2_realign import RealignConfig, retrain_stage2_realign
-
-        cfg = realign_cfg if realign_cfg is not None else RealignConfig(
-            lambda_aniso=max(self.lambda_aniso, 0.05)
-        )
-        info = retrain_stage2_realign(
-            self, X_train, M_train, X_val, M_val, cfg=cfg
-        )
-        self._realign_info = info
-        logger.info("retrain_stage2_realign complete: %s", info)
-        return self
-
-    def _fit_decoder(
-        self,
-        Z_train: np.ndarray,
-        X_train: np.ndarray,
-        M_train: np.ndarray,
-        d_in: int,
-        d_out: int,
-        device: torch.device,
-    ) -> None:
-        """Train DecoderMLP on observed (z_t, x_t) pairs from training set."""
-        import torch
-        import torch.nn as nn
-        DecoderMLP = _decoder_mlp_factory()
-
-        N, T, D = X_train.shape
-
-        # Collect pairs where any feature is observed at that timestep
-        obs_ts = M_train.any(axis=2)  # (N, T) bool: at least one feature observed
-        obs_idx = np.argwhere(obs_ts)  # (K, 2) each row is (n, t)
-
-        Z_pairs = Z_train[obs_idx[:, 0], obs_idx[:, 1], :]   # (K, d)
-        X_pairs = X_train[obs_idx[:, 0], obs_idx[:, 1], :]   # (K, D)
-        M_pairs = M_train[obs_idx[:, 0], obs_idx[:, 1], :]   # (K, D) per-feature obs
-
-        logger.info(f"DecoderMLP: {len(Z_pairs):,} observed (z,x) pairs for training.")
-
-        decoder = DecoderMLP(d_in, d_out, hidden=self.decoder_hidden).to(device)
-        self._decoder = decoder
-        opt_dec = torch.optim.Adam(decoder.parameters(), lr=self.decoder_lr)
-        sched_dec = torch.optim.lr_scheduler.CosineAnnealingLR(
-            opt_dec, T_max=self.decoder_epochs, eta_min=self.decoder_lr * 0.05
-        )
-
-        K = len(Z_pairs)
-        bs = min(512, K)
-        split = int(0.9 * K)
-        perm = np.random.permutation(K)
-        tr_idx, vl_idx = perm[:split], perm[split:]
-
-        best_vl, best_state, no_imp = float("inf"), None, 0
-        dec_iter = (
-            _tqdm(range(self.decoder_epochs), desc="Decoder", unit="ep", dynamic_ncols=True)
-            if _HAS_TQDM else range(self.decoder_epochs)
-        )
-        for ep in dec_iter:
-            decoder.train()
-            p2 = np.random.permutation(split)
-            ep_loss = 0.0; nb = 0
-            for b0 in range(0, split, bs):
-                bi = tr_idx[p2[b0: b0 + bs]]
-                z_b = torch.from_numpy(Z_pairs[bi]).to(device)
-                x_b = torch.from_numpy(X_pairs[bi]).to(device)
-                m_b = torch.from_numpy(M_pairs[bi].astype(np.float32)).to(device)
-                x_hat = decoder(z_b)
-                loss = ((x_hat - x_b) ** 2 * m_b).sum() / m_b.sum().clamp(min=1)
-                opt_dec.zero_grad(); loss.backward()
-                nn.utils.clip_grad_norm_(decoder.parameters(), 1.0)
-                opt_dec.step()
-                ep_loss += loss.item(); nb += 1
-            sched_dec.step()
-            ep_loss /= max(nb, 1)
-
-            # Validation
-            decoder.eval()
-            with torch.no_grad():
-                z_v = torch.from_numpy(Z_pairs[vl_idx]).to(device)
-                x_v = torch.from_numpy(X_pairs[vl_idx]).to(device)
-                m_v = torch.from_numpy(M_pairs[vl_idx].astype(np.float32)).to(device)
-                x_vhat = decoder(z_v)
-                vl_loss = (((x_vhat - x_v) ** 2 * m_v).sum() / m_v.sum().clamp(min=1)).item()
-
-            if _HAS_TQDM and hasattr(dec_iter, 'set_postfix'):
-                dec_iter.set_postfix(
-                    train=f"{ep_loss:.4f}", val=f"{vl_loss:.4f}",
-                    best=f"{best_vl:.4f}", pat=f"{no_imp}/{self.decoder_patience}"
-                )
-
-            if vl_loss < best_vl - 1e-6:
-                best_vl = vl_loss
-                best_state = {k: v.cpu().clone() for k, v in decoder.state_dict().items()}
-                no_imp = 0
-            else:
-                no_imp += 1
-            if no_imp >= self.decoder_patience:
-                logger.info(f"Decoder early stop at ep {ep+1} (val={vl_loss:.5f})")
-                if _HAS_TQDM and hasattr(dec_iter, 'close'):
-                    dec_iter.close()
-                break
-
-        if best_state is not None:
-            decoder.load_state_dict({k: v.to(device) for k, v in best_state.items()})
-        decoder.eval()
-        logger.info(f"Decoder fitted (best val MSE={best_vl:.5f})")
-
-    def _karcher_train_kwargs(self) -> dict:
-        """Karcher kwargs aligned with inference consumer-path fixes."""
-        use_fix = self.consumer_karcher_fix or self.stage2_v2
-        norm_g = use_fix or self.force_normalize_g
-        return dict(
-            k_time=self.k_time,
-            sigma=self.sigma,
-            N_max=self.N_max,
-            eta=self.eta,
-            use_clle_init=self.karcher_use_clle_init,
-            normalize_g=norm_g,
-            clip_step_norm=1.0 if use_fix else None,
-            adaptive_eta=use_fix,
-            g_scale=float(getattr(self, "g_karcher_scale", 1.0)),
-            eigen_clip=getattr(self, "g_eigen_clip", None),
-        )
-
-    @staticmethod
-    def _g_active_mask_from_hold(
-        miss_mask_T: np.ndarray, T: int, pad: int
-    ) -> np.ndarray:
-        """True on hold block timesteps ± pad (Phase 2.6 I-A3)."""
-        active = np.zeros(T, dtype=bool)
-        hold_idx = np.where(miss_mask_T)[0]
-        if len(hold_idx) == 0:
-            return active
-        lo = max(0, int(hold_idx.min()) - pad)
-        hi = min(T - 1, int(hold_idx.max()) + pad)
-        active[lo : hi + 1] = True
-        return active
-
-    def _stage2_v2_forward_batch(
-        self,
-        metric_net: SPDMetricNet,
-        Z_batch: torch.Tensor,
-        batch_seed: int,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Block-mask → Karcher impute → metric field (REVISE-004)."""
-        import torch
-
-        B, T, _d = Z_batch.shape
-        miss_np = sample_block_mask(B, T, batch_seed)
-        Z_np = Z_batch.detach().cpu().numpy()
-        Z_hat_np = Z_np.copy()
-        kw = self._karcher_train_kwargs()
-
-        was_training = metric_net.training
-        metric_net.eval()
-        for b in range(B):
-            I_miss = np.where(miss_np[b])[0]
-            if len(I_miss) == 0:
-                continue
-            Z_obs = Z_np[b].copy()
-            bank = self._latent_bank if self._effective_cross_k() > 0 else None
-            Z_hat_np[b] = karcher_impute(
-                Z_obs,
-                metric_net,
-                I_miss,
-                Z_bank=bank,
-                cross_k=self._effective_cross_k(),
-                cross_sigma=self.cross_sigma,
-                **kw,
-            )
-        if was_training:
-            metric_net.train()
-
-        Z_hat = torch.from_numpy(Z_hat_np).to(Z_batch.device)
-        miss_t = torch.from_numpy(miss_np).to(Z_batch.device)
-        return Z_hat, miss_t
-
-    def _val_loss(
-        self,
-        metric_net: SPDMetricNet,
-        Z_val: np.ndarray,
-        device: torch.device,
-    ) -> float:
-        import torch
-        from .losses import (
-            loss_aniso, loss_geo, loss_geo_masked,
-            loss_reg, loss_smooth, loss_time,
-        )
-
-        metric_net.eval()
-        total = 0.0
-        n_batches = 0
-        with torch.no_grad():
-            for b_start in range(0, len(Z_val), self.batch_size):
-                Z_b = torch.from_numpy(Z_val[b_start: b_start + self.batch_size]).to(device)
-                if self.stage2_v2:
-                    Z_hat, miss_t = self._stage2_v2_forward_batch(
-                        metric_net, Z_b, batch_seed=b_start
-                    )
-                    G = metric_net(Z_hat)
-                    l_g = loss_geo_masked(Z_hat, Z_b, G, miss_t)
-                    l_a = loss_aniso(G)
-                else:
-                    synth_mask = (
-                        torch.rand_like(Z_b[:, :, 0]) > self.synth_miss_rate
-                    ).float().unsqueeze(-1)
-                    Z_hat = Z_b * synth_mask
-                    G = metric_net(Z_hat)
-                    l_g = loss_geo(Z_hat, Z_b, G)
-                    l_a = Z_b.new_tensor(0.0)
-                l_r = loss_reg(G)
-                l_s = loss_smooth(G)
-                l_t = loss_time(Z_hat, self._tau)
-                total += (
-                    l_g
-                    + self.lambda_aniso * l_a
-                    + self.lambda_F * l_r
-                    + self.lambda_smooth * l_s
-                    + self.lambda_I * l_t
-                ).item()
-                n_batches += 1
-        metric_net.train()
-        return total / max(n_batches, 1)
 
     def _embed_batch(self, X: np.ndarray, M: np.ndarray, desc: str = "Embedding") -> np.ndarray:
         """Embed a batch (N, T, D) → (N, T, d) using the fitted embedder."""
@@ -1192,59 +525,6 @@ class RiemannianImputer:
         Z_gt, _ = self._embedder.transform(x_gt_n, m_gt_n, hold_t=hold_t)
         return Z_gt
 
-    def _hold_metric_fro_stats(
-        self,
-        Z_seq: np.ndarray,
-        hold_ts: np.ndarray,
-        eps_pb: float,
-        pullback_at_t: Optional[Callable[[int], np.ndarray]],
-    ) -> tuple[float, float, float]:
-        """Mean ||G_net-I||_F, ||G_pb-G_net||_F, ||G_eff-I||_F @ hold."""
-        if (
-            self._metric_net is None
-            or len(hold_ts) == 0
-            or self.ablation_no_metric
-        ):
-            return 0.0, 0.0, 0.0
-        import torch
-
-        d = Z_seq.shape[1]
-        I_d = np.eye(d, dtype=np.float32)
-        self._metric_net.eval()
-        fro_net: list[float] = []
-        fro_pb: list[float] = []
-        fro_eff: list[float] = []
-        with torch.no_grad():
-            Z_pt = (
-                torch.from_numpy(Z_seq.astype(np.float32))
-                .unsqueeze(0)
-                .to(self._device)
-            )
-            G_all = self._metric_net(Z_pt)[0].cpu().numpy()
-        for t in hold_ts:
-            ti = int(t)
-            G_net = G_all[ti]
-            fro_net.append(float(np.linalg.norm(G_net - I_d, ord="fro")))
-            G_pb = None
-            if eps_pb > 0.0 and pullback_at_t is not None:
-                G_pb = pullback_at_t(ti).astype(np.float32)
-                fro_pb.append(float(np.linalg.norm(G_pb - G_net, ord="fro")))
-            mode = str(getattr(self, "karcher_metric_mode", "learned"))
-            if mode == "identity":
-                G_eff = I_d
-            elif mode == "pullback" and G_pb is not None:
-                G_eff = G_pb
-            elif G_pb is not None and eps_pb > 0.0:
-                G_eff = (1.0 - eps_pb) * G_net + eps_pb * G_pb
-            else:
-                G_eff = G_net
-            fro_eff.append(float(np.linalg.norm(G_eff - I_d, ord="fro")))
-        return (
-            float(np.mean(fro_net)) if fro_net else 0.0,
-            float(np.mean(fro_pb)) if fro_pb else 0.0,
-            float(np.mean(fro_eff)) if fro_eff else 0.0,
-        )
-
     # ------------------------------------------------------------------
     # Impute
     # ------------------------------------------------------------------
@@ -1263,13 +543,15 @@ class RiemannianImputer:
         N, T, D = X.shape
         hat_X = np.zeros_like(X, dtype=np.float32)
 
-        # ---tage A: reset Karcher counters ---
+        # --- Stage A: reset Karcher counters ---
         reset_karcher_stats()
         self._latent_bank = None
-        cross_k_eff = self._effective_cross_k()
-        if cross_k_eff > 0:
-            self._ensure_latent_bank()
-        Z_bank = self._latent_bank
+        if float(getattr(self, "pullback_blend_epsilon", 0.0)) > 0.0:
+            raise NotImplementedError(
+                "pullback_blend_epsilon>0 needs the embedder-pullback ablation "
+                "module, which is not part of this release. "
+                "The deployed path uses the default pullback_blend_epsilon=0.0."
+            )
 
         it = (
             _tqdm(range(N), desc="Imputing", unit="sample", dynamic_ncols=True)
@@ -1291,52 +573,8 @@ class RiemannianImputer:
                 hold_t = miss_mask_T if getattr(self, "hold_aware_stage1", False) else None
                 Z_n, X_pca_n = self._embedder.transform(x_n, m_n, hold_t=hold_t)
 
-            # Stage II: find time steps that need Karcher reconstruction.
+            # Stage II: time steps that need reconstruction.
             I_miss = np.where(miss_mask_T)[0]
-
-            k_time_eff = max(self.k_time, 20) if getattr(
-                self, "stage2_realign", False
-            ) else self.k_time
-
-            kw = self._karcher_train_kwargs()
-            kw["k_time"] = k_time_eff
-            if getattr(self, "g_apply_mode", "global") == "hold_neighborhood":
-                kw["g_active_mask"] = self._g_active_mask_from_hold(
-                    miss_mask_T, T, int(getattr(self, "g_neighborhood_pad", 10))
-                )
-
-            eps_pb = float(getattr(self, "pullback_blend_epsilon", 0.0))
-            _pullback_at_t: Optional[Callable[[int], np.ndarray]] = None
-            if (
-                eps_pb > 0.0
-                and self._embedder is not None
-                and not self.ablation_no_embed
-            ):
-                try:
-                    from experiments.embedder_pullback import embedder_pullback_at
-                except ImportError as exc:
-                    raise NotImplementedError(
-                        "pullback_blend_epsilon>0 needs the embedder-pullback ablation "
-                        "module, which is not part of this release. "
-                        "The deployed path uses the default pullback_blend_epsilon=0.0."
-                    ) from exc
-
-                _pb_cache: dict[int, np.ndarray] = {}
-
-                def _pullback_at_t(t_idx: int) -> np.ndarray:
-                    ti = int(t_idx)
-                    if ti not in _pb_cache:
-                        _pb_cache[ti] = embedder_pullback_at(
-                            self._embedder, x_n, m_n, ti
-                        )
-                    return _pb_cache[ti]
-
-                kw["pullback_blend_epsilon"] = eps_pb
-                kw["pullback_at_t"] = _pullback_at_t
-
-            kw["karcher_metric_mode"] = str(
-                getattr(self, "karcher_metric_mode", "learned")
-            )
 
             Z_gt: Optional[np.ndarray] = None
             if self._need_z_gt():
@@ -1351,25 +589,16 @@ class RiemannianImputer:
                         (1.0 - alpha_n) * Z_n[ti] + alpha_n * Z_gt[ti]
                     ).astype(np.float32)
 
-            kw["z_hold_oracle_alpha"] = float(getattr(self, "z_hold_oracle_alpha", 0.0))
-            if kw["z_hold_oracle_alpha"] > 0.0 and Z_gt is not None:
-                kw["z_oracle_Z_gt"] = Z_gt
-
             Z_k_raw: Optional[np.ndarray] = None
             _stage2 = str(getattr(self, "stage2_method", "mhb"))
-            _use_metric = (
-                self._metric_net is not None and not self.ablation_no_metric
-            )
             if len(I_miss) > 0 and _stage2 == "mhb":
                 # — paper Algorithm 1 path (closed-form Stage II).
-                # Runs with OR without the learned metric: the soft
-                # graph-Tikhonov refinement never consumes G_net, so the
-                # default training-free deployment includes Stage II.
+                # The soft graph-Tikhonov refinement never consumes a learned
+                # metric: G_net is always None, so the training-free
+                # deployment includes Stage II as-is.
                 # Graph A = Stage I mask-weighted time-window k-NN graph
                 # (eqs. (5)-(7)) built on THIS sample's low-d PCA coords,
                 # mirroring MaskedManifoldEmbedder.build() exactly.
-                if _use_metric:
-                    self._metric_net.eval()
                 reset_karcher_detail()
                 mp = dict(getattr(self, "mhb_params", None) or {})
                 if self._embedder is not None and not self.ablation_no_embed:
@@ -1387,7 +616,7 @@ class RiemannianImputer:
                 )
                 Z_k_raw = mhb_impute(
                     Z_n,
-                    self._metric_net if _use_metric else None,
+                    None,
                     I_miss,
                     A_n,
                     K=int(mp.get("K", 5)),
@@ -1413,33 +642,11 @@ class RiemannianImputer:
                         Z_prime[ti] = (1.0 - lam) * Z_n[ti] + lam * Z_k[ti]
                 else:
                     Z_prime = Z_k
-            elif (
-                len(I_miss) > 0
-                and _use_metric
-                and not self.ablation_no_karcher_g
-            ):
-                self._metric_net.eval()
-                reset_karcher_detail()
-                Z_k_raw = karcher_impute(
-                    Z_n,
-                    self._metric_net,
-                    I_miss,
-                    Z_bank=Z_bank,
-                    cross_k=cross_k_eff,
-                    cross_sigma=self.cross_sigma,
-                    **kw,
-                )
-                Z_k = Z_k_raw
-                lam = float(getattr(self, "karcher_blend_lambda", 1.0))
-                if lam < 1.0 - 1e-12:
-                    Z_prime = Z_n.copy()
-                    for t_idx in I_miss:
-                        ti = int(t_idx)
-                        Z_prime[ti] = (1.0 - lam) * Z_n[ti] + lam * Z_k[ti]
-                else:
-                    Z_prime = Z_k
             else:
-                Z_prime = Z_n  # no missing entries, or legacy karcher ablation
+                # No missing entries, or stage2_method='karcher' (the legacy
+                # Karcher operator required the removed learned metric and is
+                # no longer available; Stage I estimate is left untouched).
+                Z_prime = Z_n
                 Z_k_raw = None
 
             if Z_gt is not None and self.z_prime_oracle_alpha > 0.0 and len(I_hold) > 0:
@@ -1451,16 +658,7 @@ class RiemannianImputer:
                     ).astype(np.float32)
 
             # Stage III: inverse mapping
-            if self._decoder is not None:
-                # DecoderMLP path (ablation_use_decoder or default decoder)
-                import torch
-
-                with torch.no_grad():
-                    z_t = torch.from_numpy(Z_prime.astype(np.float32)).to(self._device)
-                    x_hat_t = self._decoder(z_t).cpu().numpy()
-                hat_X[n] = x_hat_t
-                hat_X[n][m_n == 1] = x_n[m_n == 1]
-            elif self.ablation_no_embed and self._ablation_pca is not None:
+            if self.ablation_no_embed and self._ablation_pca is not None:
                 # ablation_no_embed: reconstruct via sklearn PCA.inverse_transform.
                 # This is the proper "no manifold embedding" comparison — plain PCA
                 # instead of the masked-aware manifold chart, not column-mean fallback.
@@ -1478,34 +676,11 @@ class RiemannianImputer:
                 hat_X[n][miss_pos] = np.broadcast_to(col_means, x_n.shape)[miss_pos]
                 hat_X[n] = np.nan_to_num(hat_X[n], nan=0.0)
             else:
-                # Pure CLLE inverse fallback.
+                # CLLE inverse with Euclidean simplex weights.
                 #
-                #tage D (fix break ③):
-                # Evaluate the learned metric G(z) along Z_prime so that the
-                # downstream simplex-weight solve in clle_inverse uses
-                # G-Mahalanobis geometry. When ablation_no_metric or the
-                # metric net is unavailable, G_field_n stays None and
-                # clle_inverse silently falls back to Euclidean weights —
-                # critical for keeping the `no_metric` ablation faithful.
-                G_field_n = None
-                use_metric_simplex = (
-                    self._metric_net is not None
-                    and not self.ablation_no_metric
-                    and not self.ablation_no_simplex_g
-                    and not self.scoped_g_simplex
-                )
-                if use_metric_simplex:
-                    import torch
-
-                    self._metric_net.eval()
-                    with torch.no_grad():
-                        Z_pt = (
-                            torch.from_numpy(Z_prime.astype(np.float32))
-                            .unsqueeze(0)
-                            .to(self._device)
-                        )
-                        G_t = self._metric_net(Z_pt)            # (1, T, d, d)
-                        G_field_n = G_t[0].cpu().numpy()        # (T, d, d)
+                # No learned metric exists in this release, so the simplex-
+                # weight problem is always solved with the Euclidean Gram
+                # matrix (G_field=None: the only path).
                 if self._tracer is not None:
                     hat_euclid = clle_inverse(
                         Z_prime,
@@ -1518,18 +693,8 @@ class RiemannianImputer:
                         m_n,
                         G_field=None,
                     )
-                    hat_metric = clle_inverse(
-                        Z_prime,
-                        self._embedder.id_L,
-                        self._embedder.clle_weights,
-                        X_pca_n,
-                        self._embedder.V,
-                        self._embedder.mu,
-                        x_n,
-                        m_n,
-                        G_field=G_field_n,
-                    )
-                    hat_X[n] = hat_metric if use_metric_simplex else hat_euclid
+                    hat_metric = hat_euclid
+                    hat_X[n] = hat_euclid
                 else:
                     hat_X[n] = clle_inverse(
                         Z_prime,
@@ -1540,7 +705,7 @@ class RiemannianImputer:
                         self._embedder.mu,
                         x_n,
                         m_n,
-                        G_field=G_field_n,
+                        G_field=None,
                     )
 
                 if self._tracer is not None:
@@ -1559,7 +724,7 @@ class RiemannianImputer:
                         Z_prime,
                         self._embedder.id_L,
                         self._embedder.clle_weights,
-                        G_field_n if use_metric_simplex else None,
+                        None,
                         I_hold_t,
                     )
                     z_gt_err = 0.0
@@ -1608,10 +773,10 @@ class RiemannianImputer:
                             else x_n
                         )
                         x_recon_zgt = per_dim_mae(hat_zgt, x_gt_ref, hold_eval)
-                    pb_fn = _pullback_at_t if eps_pb > 0.0 else None
-                    g_net_fro, g_pb_fro, g_i_fro = self._hold_metric_fro_stats(
-                        Z_prime, I_hold_t, eps_pb, pb_fn
-                    )
+                    # No learned metric: the G-Frobenius trace stats are
+                    # identically zero (same values the retired diagnostic
+                    # returned when no metric net was fitted).
+                    g_net_fro, g_pb_fro, g_i_fro = 0.0, 0.0, 0.0
                     kd = get_last_karcher_detail()
                     step_norms = kd.get("step_norms", [])
                     k_step_mean = float(np.mean(step_norms)) if step_norms else 0.0
@@ -1687,20 +852,23 @@ class RiemannianImputer:
     # ------------------------------------------------------------------
 
     def __getstate__(self):
-        """Store ``_device`` as a string so closed-form checkpoints pickle
-        without importing torch on the loading machine (see ``load``)."""
+        """Return the picklable state. No device / learned components exist
+        in this release; legacy keys are dropped so checkpoints stay pure
+        NumPy and load on machines without torch."""
         state = self.__dict__.copy()
-        if state.get("_device") is not None:
-            state["_device"] = str(state["_device"])
+        state.pop("_device", None)
+        state["_metric_net"] = None
+        state["_decoder"] = None
         return state
 
     def __setstate__(self, state):
+        state = dict(state)
+        state.pop("_device", None)
         self.__dict__.update(state)
-        try:
-            import torch  # noqa: F401
-        except ImportError:
-            # torch-free deployment: _device stays a plain string (unused)
-            pass
+        # Normalize legacy checkpoints: there is no learned component in
+        # this release, so these are always None.
+        self._metric_net = None
+        self._decoder = None
 
     def save(self, path: str) -> None:
         import pickle, pathlib
@@ -1710,55 +878,59 @@ class RiemannianImputer:
 
     @classmethod
     def load(cls, path: str) -> "RiemannianImputer":
-        import io
         import pickle
 
-        try:
-            import torch
-        except ImportError:  # torch-free deployment: closed-form checkpoints only
-            torch = None
+        class _LegacyUnpickler(pickle.Unpickler):
+            """Load closed-form checkpoints saved by earlier releases.
 
-        class _CPUUnpickler(pickle.Unpickler):
-            """Load pickles saved on MPS/CUDA into CPU tensors (Linux server compat).
-
-            Also tolerates checkpoints whose pickle stream embeds a stored
-            ``torch.device`` attribute (``_device``) on machines without torch:
-            the shim returns None, and ``load()`` resets ``_device`` anyway.
+            Earlier releases stored a ``torch.device`` string in ``_device``
+            (always ``None`` on the training-free path). The shim maps that
+            class to ``None`` so such pickles load without torch. Any
+            checkpoint that embeds actual learned weights (a pickled metric
+            network or decoder) is rejected: it contradicts the training-free
+            method and cannot be reproduced by this release.
             """
+
+            _RETIRED = ("dmhi.method.metric", "dmhi.method.losses",
+                        "dmhi.method.stage2_realign")
 
             def find_class(self, module, name):
                 if module == "torch" and name == "device":
-                    if torch is None:
-                        return lambda *a, **k: None
-                    return torch.device
-                if (
-                    module == "torch.storage"
-                    and name == "_load_from_bytes"
-                    and torch is not None
-                ):
-                    return lambda b: torch.load(
-                        io.BytesIO(b), map_location="cpu", weights_only=False
+                    return lambda *a, **k: None
+                if module.startswith("torch"):
+                    raise RuntimeError(
+                        "This checkpoint embeds torch objects (learned "
+                        "weights); it was produced by a retired training "
+                        "branch and is not loadable by the training-free "
+                        "release. Rebuild the checkpoint with "
+                        "scripts/build_checkpoint.py."
+                    )
+                if module in self._RETIRED or module.startswith("torch."):
+                    raise RuntimeError(
+                        f"This checkpoint embeds a retired module "
+                        f"({module}.{name}); it contains learned weights and "
+                        "is not loadable by the training-free release. "
+                        "Rebuild the checkpoint with scripts/build_checkpoint.py."
                     )
                 return super().find_class(module, name)
 
         with open(path, "rb") as f:
             try:
                 obj = pickle.load(f)
-            except (RuntimeError, pickle.UnpicklingError, ModuleNotFoundError):
+            except ModuleNotFoundError:
+                # Legacy pickle referencing a removed module: retry through
+                # the shim so the error message names the retired component.
                 f.seek(0)
-                obj = _CPUUnpickler(f).load()
-        if torch is None:
-            if obj._metric_net is not None or getattr(obj, "use_learned_metric", False):
-                raise RuntimeError(
-                    "This checkpoint contains a learned metric network; "
-                    "install torch to load it."
-                )
-            obj._device = None
-            return obj
-        device = get_device()
-        obj._device = device
-        if obj._metric_net is not None:
-            obj._metric_net = obj._metric_net.to(device)
+                obj = _LegacyUnpickler(f).load()
+        # Old checkpoints may carry a learned-metric flag or device; both
+        # are meaningless now and are normalized away by __setstate__.
+        obj.use_learned_metric = False
+        obj.ablation_use_decoder = False
+        obj.ablation_no_metric = True
+        obj._metric_net = None
+        obj._decoder = None
+        if hasattr(obj, "_device"):
+            del obj._device
         # Backward compat for pickles saved before REVISE-003 flags
         if not hasattr(obj, "ablation_no_karcher_g"):
             obj.ablation_no_karcher_g = False
@@ -1785,7 +957,7 @@ class RiemannianImputer:
         if not hasattr(obj, "karcher_blend_lambda"):
             obj.karcher_blend_lambda = 1.0
         if not hasattr(obj, "karcher_metric_mode"):
-            obj.karcher_metric_mode = "learned"
+            obj.karcher_metric_mode = "identity"
         if not hasattr(obj, "consumer_karcher_fix"):
             obj.consumer_karcher_fix = False
         if not hasattr(obj, "stage2_v2"):

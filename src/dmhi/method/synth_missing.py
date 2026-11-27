@@ -1,4 +1,4 @@
-"""Synthetic block missingness for Stage II v2 training (REVISE-004)."""
+"""Synthetic block missingness masks for the edge experiments (E5)."""
 from __future__ import annotations
 
 import numpy as np
