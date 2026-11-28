@@ -10,22 +10,50 @@ from scipy.sparse import csr_matrix
 # Landmark selection
 # ---------------------------------------------------------------------------
 
-def time_stratified_landmarks(T: int, r_L: float = 0.12) -> np.ndarray:
-    """Return sorted landmark time indices with time-stratified uniform sampling.
+def time_stratified_landmarks(T: int, r_L: float = 0.30,
+                              scheme: str = "stratified",
+                              seed: int = 0) -> np.ndarray:
+    """Return sorted landmark time indices under the requested selection scheme.
 
     Guarantees coverage: divides [0, T) into ceil(r_L * T) equal-width bins
     and draws one index uniformly per bin. Endpoints 0 and T-1 are always
     included to anchor the chart.
 
+    Schemes (E4c landmark-selection ablation, answers reviewer R1-3's
+    "sensitivity to different landmark selections" literally):
+      * "stratified" (default, deployed): median index of each bin —
+        deterministic, a pure function of the input length.
+      * "uniform": evenly spaced indices 0, T-1 plus interior points at
+        fixed stride — deterministic as well, differs from stratified by
+        the within-bin offset.
+      * "random": one uniformly drawn index per bin with the given seed —
+        reproducible via the explicit seed, NOT a function of the input
+        alone, retained solely for the sensitivity study.
+
     Args:
         T: number of time steps.
-        r_L: fraction of time steps to use as landmarks (default 0.12).
+        r_L: fraction of time steps to use as landmarks (default 0.30, the
+            deployed paper configuration).
+        scheme: "stratified" | "uniform" | "random".
+        seed: RNG seed for the "random" scheme (ignored otherwise).
 
     Returns:
         Sorted 1-D int array of length n_L = max(2, ceil(r_L * T)).
     """
     n_L = max(2, int(np.ceil(r_L * T)))
     bins = np.array_split(np.arange(T), n_L)
+    if scheme == "uniform":
+        # fixed stride over [0, T): covers the same n_L budget with a
+        # different within-bin phase than the stratified median
+        idx = np.round(np.linspace(0, T - 1, n_L)).astype(int)
+        return np.unique(idx).astype(int)
+    if scheme == "random":
+        gen = np.random.default_rng(seed)
+        picks = [int(b[int(gen.integers(len(b)))]) for b in bins]
+        picks[0] = 0
+        picks[-1] = T - 1
+        return np.unique(np.asarray(picks)).astype(int)
+    # default: stratified (median of each bin)
     landmarks = np.array([rng[len(rng) // 2] for rng in bins])
     landmarks[0] = 0
     landmarks[-1] = T - 1

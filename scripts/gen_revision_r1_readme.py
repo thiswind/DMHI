@@ -60,7 +60,7 @@ A('be read jointly with MAE.\n')
 cur = json.load(open(OUT + 'e4_sensitivity/e4_sensitivity_curves_e4_stage2_fixed.json'))
 A('## E4: four-parameter sensitivity sweep (R1-3, R1-5, R2-2, R2-9)\n')
 A('3-seed mean MAE per parameter value, three domains (physionet2012,')
-A('mocap_karate, delta_robot). Default config: k=10, gamma_s=0.02, r_L=0.12, d=8.\n')
+A('mocap_karate, delta_robot). Default config: k=10, gamma_s=0.02, r_L=0.30, d=8.\n')
 pname = {'k': 'neighborhood size k', 'gamma_s': 'smoothing coefficient gamma_s',
          'r_L': 'landmark ratio r_L', 'd': 'latent dimension d'}
 for p in ('k', 'gamma_s', 'r_L', 'd'):

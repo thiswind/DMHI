@@ -70,7 +70,9 @@ class RiemannianImputer:
         k_clle: int = 9,
         d_pca: int | None = None,
         hold_blend_alpha: float = 0.0,
-        r_L: float = 0.12,
+        r_L: float = 0.30,
+        landmark_scheme: str = "stratified",
+        landmark_seed: int = 0,
         lambda_I: float = 0.01,
         lambda_norm: float = 0.1,
         embed_epochs: int = 200,
@@ -167,6 +169,13 @@ class RiemannianImputer:
         self.d_pca = d_pca
         self.hold_blend_alpha = float(hold_blend_alpha)
         self.r_L = r_L
+        # E4c landmark-selection study (reviewer R1-3); fail fast on typos.
+        if str(landmark_scheme).lower() not in ("stratified", "uniform", "random"):
+            raise NotImplementedError(
+                f"landmark_scheme must be stratified|uniform|random, "
+                f"got {landmark_scheme!r}")
+        self.landmark_scheme = landmark_scheme
+        self.landmark_seed = landmark_seed
         self.lambda_I = lambda_I
         self.lambda_norm = lambda_norm
         self.embed_epochs = embed_epochs
@@ -343,6 +352,8 @@ class RiemannianImputer:
                 W_search=W_search_eff,
                 k_clle=self.k_clle,
                 r_L=self.r_L,
+                landmark_scheme=self.landmark_scheme,
+                landmark_seed=self.landmark_seed,
                 lambda_I=lambda_I_eff,
                 lambda_norm=self.lambda_norm,
                 max_epochs=self.embed_epochs,
@@ -958,6 +969,13 @@ class RiemannianImputer:
             obj.karcher_blend_lambda = 1.0
         if not hasattr(obj, "karcher_metric_mode"):
             obj.karcher_metric_mode = "identity"
+        # Backfill for pickles saved before the E4c landmark-scheme study:
+        # the released v0.3.0 checkpoints were all built with the deployed
+        # stratified selector, so 'stratified' / seed 0 is the factual value.
+        if not hasattr(obj, "landmark_scheme"):
+            obj.landmark_scheme = "stratified"
+        if not hasattr(obj, "landmark_seed"):
+            obj.landmark_seed = 0
         if not hasattr(obj, "consumer_karcher_fix"):
             obj.consumer_karcher_fix = False
         if not hasattr(obj, "stage2_v2"):

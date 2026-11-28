@@ -201,7 +201,9 @@ class MaskedManifoldEmbedder:
         k: int = 10,
         W_search: int = 5,
         k_clle: int = 9,
-        r_L: float = 0.12,
+        r_L: float = 0.30,
+        landmark_scheme: str = "stratified",
+        landmark_seed: int = 0,
         lambda_I: float = 0.01,
         lambda_norm: float = 0.1,
         max_epochs: int = 200,
@@ -222,6 +224,10 @@ class MaskedManifoldEmbedder:
         self.W_search = W_search
         self.k_clle = k_clle
         self.r_L = r_L
+        # E4c landmark-selection study (reviewer R1-3): "stratified" is the
+        # deployed default; "uniform"/"random" are ablation alternatives.
+        self.landmark_scheme = landmark_scheme
+        self.landmark_seed = landmark_seed
         self.lambda_I = lambda_I
         self.lambda_norm = lambda_norm
         self.max_epochs = max_epochs
@@ -253,7 +259,9 @@ class MaskedManifoldEmbedder:
         T, D = X.shape
 
         # --- Step 2: landmarks (must compute n_L before d to enforce d < n_L) ---
-        id_L = time_stratified_landmarks(T, self.r_L)
+        id_L = time_stratified_landmarks(T, self.r_L,
+                                         scheme=self.landmark_scheme,
+                                         seed=self.landmark_seed)
         n_L = len(id_L)
 
         # Need n_L ≥ d + 2 for LE to give d non-trivial eigenvectors:

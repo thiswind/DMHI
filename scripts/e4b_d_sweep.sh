@@ -3,9 +3,12 @@
 # Companion to e4_sensitivity.sh (gamma_s / r_L / k already done there).
 # Grid per dataset, clipped to d <= D-2 (build_checkpoint.py auto rule: min(12, D-2)),
 # default point always included:
-#   delta_robot    D=6  -> {2,3,4}    (default 4)
-#   physionet2012  D=10 -> {2,4,8}    (default 8)
-#   mocap_karate   D=39 -> {2,4,8,12,16,24} (default 12)
+#   delta_robot    D=6   -> {2,3,4}    (default 4)
+#   physionet2012  D=35  -> {2,4,8}    (default 12, NOT in this grid: d sweep was
+#                        capped at 8 due to a mistaken D=10 note here; the deployed
+#                        d=12 point is covered by the k10/gamma0.02/rL0.30 runs,
+#                        which are bit-identical to each other and to Table II)
+#   mocap_karate   D=39  -> {2,4,8,12,16,24} (default 12)
 # Same protocol as E4: rho=0.9, block=20, 3 seeds, idempotent.
 set -uo pipefail
 export OPENBLAS_NUM_THREADS=16 OMP_NUM_THREADS=16 MKL_NUM_THREADS=16

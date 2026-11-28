@@ -2,20 +2,26 @@
 # v0.3.0-r1 release rehearsal/executor for the code repo (IoTJ-R1).
 #
 # Usage:
-#   bash scripts/release_v030_r1.sh --dry-run   # rehearsal: build squash commit
-#                                           # on temp branch, show summary, delete
-#   bash scripts/release_v030_r1.sh --release   # REAL: squash -> move main ->
-#                                           # tag v0.3.0-r1 (still NO push; push
-#                                           # is a separate explicit step)
+#   bash scripts/release_v030_r1.sh --dry-run   # rehearsal: build the squash
+#                                           # commit object on top of main,
+#                                           # show summary, keep nothing
+#   bash scripts/release_v030_r1.sh --release   # REAL: squash tree -> new
+#                                           # commit with parent main -> move
+#                                           # main -> tag v0.3.0-r1 (still NO
+#                                           # push; push is a separate step)
+#
+# The squash commit is created with `git commit-tree` as a CHILD of the
+# current main (not an orphan), so `git push origin main` stays a
+# fast-forward and the main history remains connected. The work tree and
+# the current branch are never switched.
 #
 # Red lines honored: revision/iotj-r1 never pushes; main only moves on
-# --release; nothing is deleted except the temp rehearsal branch.
+# --release; nothing is deleted.
 set -euo pipefail
 
 MODE="${1:--dry-run}"
 cd "$(dirname "$0")/.."
 SRC_BRANCH="revision/iotj-r1"
-TMP_BRANCH="tmp/v0.3.0-r1-squash"
 TAG="v0.3.0-r1"
 
 echo "== preflight =="
@@ -27,7 +33,8 @@ if [ "$CUR" != "$SRC_BRANCH" ]; then
 fi
 SRC_HEAD="$(git rev-parse --short HEAD)"
 N_COMMITS="$(git rev-list --count main..HEAD 2>/dev/null || echo '?')"
-echo "source: $SRC_BRANCH @ $SRC_HEAD ($N_COMMITS commits ahead of main)"
+MAIN_HEAD="$(git rev-parse --short main)"
+echo "source: $SRC_BRANCH @ $SRC_HEAD ($N_COMMITS commits ahead of main @ $MAIN_HEAD)"
 
 if git rev-parse --verify "refs/tags/$TAG" >/dev/null 2>&1; then
   echo "tag $TAG already exists -> refuse"; exit 1
@@ -42,32 +49,24 @@ and every torch import removed from src/dmhi; fit() replaced by build())
 (e1 metric ablation, regression and checkpoint-rebuild evidence)
 + e8/e10 gap-filler scripts + verification tooling."
 
-echo "== build squash on $TMP_BRANCH =="
-git checkout --orphan "$TMP_BRANCH"
-git add -A
-git commit -m "$MSG"
-SQ="$(git rev-parse --short HEAD)"
-echo "squash commit: $SQ"
-git checkout "$SRC_BRANCH"
-git branch -D "$TMP_BRANCH"
+echo "== build squash commit on top of main =="
+SQ="$(git commit-tree "HEAD^{tree}" -p main -m "$MSG")"
+echo "squash commit: $(git rev-parse --short "$SQ")  parent: $MAIN_HEAD  tree: $(git rev-parse --short "$SQ^{tree}")"
+[ "$(git rev-parse "$SQ^{tree}")" = "$(git rev-parse "HEAD^{tree}")" ] \
+  || { echo "tree mismatch"; exit 1; }
 
 if [ "$MODE" = "--dry-run" ]; then
   echo "== DRY RUN complete =="
   echo "rehearsal OK; real release would:"
-  echo "  1. recreate squash commit, reset main to it, tag $TAG"
-  echo "  2. push would remain MANUAL (git push origin main $TAG)"
+  echo "  1. create the same squash commit, move main to it, tag $TAG"
+  echo "  2. push would remain MANUAL (git push origin main $TAG, fast-forward)"
   exit 0
 fi
 
 if [ "$MODE" != "--release" ]; then echo "unknown mode: $MODE"; exit 1; fi
 
 echo "== REAL RELEASE =="
-git checkout --orphan "$TMP_BRANCH"
-git add -A
-git commit -m "$MSG"
-git branch -f main "$TMP_BRANCH"
-git checkout main
-git branch -D "$TMP_BRANCH"
-git tag -a "$TAG" -m "IoTJ-R1 revision release (official rerun numbers)"
-echo "== done: main @ $(git rev-parse --short HEAD), tag $TAG =="
+git branch -f main "$SQ"
+git tag -a "$TAG" -m "IoTJ-R1 revision release (training-free code, rebuilt checkpoints)" "$SQ"
+echo "== done: main @ $(git rev-parse --short main), tag $TAG =="
 echo "push remains manual: git push origin main $TAG"
