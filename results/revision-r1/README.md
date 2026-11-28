@@ -46,7 +46,7 @@ be read jointly with MAE.
 ## E4: four-parameter sensitivity sweep (R1-3, R1-5, R2-2, R2-9)
 
 3-seed mean MAE per parameter value, three domains (physionet2012,
-mocap_karate, delta_robot). Default config: k=10, gamma_s=0.02, r_L=0.12, d=8.
+mocap_karate, delta_robot). Default config: k=10, gamma_s=0.02, r_L=0.30, d=8.
 
 ### neighborhood size k
 
