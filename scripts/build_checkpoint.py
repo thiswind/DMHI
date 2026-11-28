@@ -65,6 +65,12 @@ def parse_args():
     p.add_argument("--k", type=int, default=10)
     p.add_argument("--k_clle", type=int, default=9)
     p.add_argument("--r_L", type=float, default=0.30)
+    p.add_argument("--landmark_scheme", default="stratified",
+                   choices=["stratified", "uniform", "random"],
+                   help="landmark selection scheme (E4c sensitivity study; "
+                        "stratified is the deployed default)")
+    p.add_argument("--landmark_seed", type=int, default=0,
+                   help="RNG seed for landmark_scheme=random (ignored otherwise)")
     # The following options configured the retired Stage II training loop.
     # They are DEPRECATED: still accepted on the command line so that older
     # sweep scripts keep running, but ignored by build() and not recorded in
@@ -130,6 +136,8 @@ def main():
         k=args.k,
         k_clle=args.k_clle,
         r_L=args.r_L,
+        landmark_scheme=args.landmark_scheme,
+        landmark_seed=args.landmark_seed,
         embed_epochs=args.embed_epochs,
         stage2_method=args.stage2_method,
         mhb_params={"mode": "soft", "spline_gamma": args.spline_gamma,
@@ -155,6 +163,9 @@ def main():
         "d": d,
         "k": args.k,
         "k_clle": args.k_clle,
+        "r_L": args.r_L,
+        "landmark_scheme": args.landmark_scheme,
+        "landmark_seed": (args.landmark_seed if args.landmark_scheme == "random" else None),
         "embed_epochs": args.embed_epochs,
         "stage2_method": args.stage2_method,
         "spline_gamma": args.spline_gamma,
