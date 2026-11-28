@@ -47,7 +47,7 @@ PARAMS = {
               default=None, xlabel=r"latent chart dimension $d$",
               logx=False, order=None),  # per-dataset defaults below
 }
-DS_DEFAULT_D = {"mocap_karate": 12, "delta_robot": 4, "physionet2012": 8}
+DS_DEFAULT_D = {"mocap_karate": 12, "delta_robot": 4, "physionet2012": 12}
 
 plt.rcParams.update({
     "font.family": "serif",
