@@ -10,7 +10,7 @@ from scipy.sparse import csr_matrix
 # Landmark selection
 # ---------------------------------------------------------------------------
 
-def time_stratified_landmarks(T: int, r_L: float = 0.12,
+def time_stratified_landmarks(T: int, r_L: float = 0.30,
                               scheme: str = "stratified",
                               seed: int = 0) -> np.ndarray:
     """Return sorted landmark time indices under the requested selection scheme.
@@ -32,7 +32,8 @@ def time_stratified_landmarks(T: int, r_L: float = 0.12,
 
     Args:
         T: number of time steps.
-        r_L: fraction of time steps to use as landmarks (default 0.12).
+        r_L: fraction of time steps to use as landmarks (default 0.30, the
+            deployed paper configuration).
         scheme: "stratified" | "uniform" | "random".
         seed: RNG seed for the "random" scheme (ignored otherwise).
 

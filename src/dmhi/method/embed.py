@@ -201,7 +201,7 @@ class MaskedManifoldEmbedder:
         k: int = 10,
         W_search: int = 5,
         k_clle: int = 9,
-        r_L: float = 0.12,
+        r_L: float = 0.30,
         landmark_scheme: str = "stratified",
         landmark_seed: int = 0,
         lambda_I: float = 0.01,

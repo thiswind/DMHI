@@ -70,7 +70,7 @@ class RiemannianImputer:
         k_clle: int = 9,
         d_pca: int | None = None,
         hold_blend_alpha: float = 0.0,
-        r_L: float = 0.12,
+        r_L: float = 0.30,
         landmark_scheme: str = "stratified",
         landmark_seed: int = 0,
         lambda_I: float = 0.01,
@@ -969,6 +969,13 @@ class RiemannianImputer:
             obj.karcher_blend_lambda = 1.0
         if not hasattr(obj, "karcher_metric_mode"):
             obj.karcher_metric_mode = "identity"
+        # Backfill for pickles saved before the E4c landmark-scheme study:
+        # the released v0.3.0 checkpoints were all built with the deployed
+        # stratified selector, so 'stratified' / seed 0 is the factual value.
+        if not hasattr(obj, "landmark_scheme"):
+            obj.landmark_scheme = "stratified"
+        if not hasattr(obj, "landmark_seed"):
+            obj.landmark_seed = 0
         if not hasattr(obj, "consumer_karcher_fix"):
             obj.consumer_karcher_fix = False
         if not hasattr(obj, "stage2_v2"):
