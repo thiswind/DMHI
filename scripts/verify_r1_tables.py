@@ -14,7 +14,8 @@ L = ROOT / 'paper/revision/latex-source-r1'
 ok, bad = 0, []
 ROW = re.compile('^(.+?) & (.+?) ' + re.escape('\\\\') + '\n', re.M)
 def CLEAN(s):
-    return re.sub(r'\\rev\{|\\textbf\{|\\underline\{|\}', '', s.strip())
+    s = re.sub(r'\\rev\{|\\textbf\{|\\underline\{|\\dag', '', s.strip())
+    return s.replace('}', '')
 
 # --- e7 tables
 for ds, fn in [('air_quality_italy', 'tab_e7_air.tex'), ('physionet2012', 'tab_e7_physio.tex')]:
@@ -51,11 +52,13 @@ for row, d in zip(rows, dom_of_row):
 
 # --- e5 pi
 tex = (L / 'tab_e5_pi.tex').read_text()
-dom_disp_rev = {'Air Quality': 'air_quality_italy', 'BreizhCrops': 'breizh_rs', 'Delta': 'delta_robot',
-                'Gait': 'gait_uci', 'Gas': 'gas_home', 'MoCap': 'mocap_karate', 'Solo-12': 'solo12'}
+dom_disp_rev = {'Air Quality': 'air_quality_italy', 'BreizhCrops': 'breizh_pheno', 'BreizhRS': 'breizh_rs',
+                'CMAPSS': 'cmapss', 'Delta': 'delta_robot',
+                'Gait': 'gait_uci', 'Gas': 'gas_home', 'MC-Maze': 'mc_maze', 'MoCap': 'mocap_karate',
+                'PulseDB': 'pulsedb', 'Solo-12': 'solo12'}
 rows = [(n, r) for n, r in ROW.findall(tex)
         if n.strip() != 'Domain' and '{\\times}' in r.split('&')[0]]
-assert len(rows) == 7, len(rows)
+assert len(rows) == 11, len(rows)
 for name, row in rows:
     d = dom_disp_rev[name.strip()]
     j = json.load(open(RR / f'e5_edge/pi_{d}_seed7.json'))['methods']['DMHI']
@@ -93,7 +96,7 @@ for d in order:
     a, b = [], []
     for s in (7, 42, 123):
         m = json.load(open(ROOT / f'code/runs/e6_psw_official/psw_i_ini_{d}_seed{s}_metrics.json'))
-        a.append(m['official_scaled_mae']); b.append(m['official_scaled_mse'])
+        a.append(m['paper_mae']); b.append(m['paper_mse'])
     psw_mae.append(sum(a) / 3); psw_mse.append(sum(b) / 3)
 
 _drow = re.search(r'DMHI \(ours\) & (.+?) ' + re.escape('\\\\'), tbl, re.S).group(1)
@@ -125,8 +128,8 @@ for v, e in zip(d3r, exp_rmse):
     if abs(v - e) > 5e-4: bad.append(('t3-rmse', 'DMHI', v, round(e, 4)))
     else: ok += 1
 
-if '92.0\\%' not in tex:
-    bad.append(('abstract', '92.0% missing', '', ''))
+if '91.5\\%' not in tex:
+    bad.append(('abstract', '91.5% missing', '', ''))
 else:
     ok += 1
 
